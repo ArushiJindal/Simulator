@@ -3,3 +3,8 @@
 
 [dev]
   functions = "functions/"
+
+  
+[[blobs]]
+  store = "summaries"
+  caching_behavior = "manual"

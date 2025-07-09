@@ -10,6 +10,9 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "node-fetch": "^3.3.2"
+    "@google/generative-ai": "^0.24.1",
+    "@netlify/blobs": "^10.0.4",
+    "node-fetch": "^3.3.2",
+    "youtube-transcript": "^1.2.1"
   }
 }

@@ -3,19 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Overview</title>
+    <title>Stock Information</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <main class="container">
-        <h1>📈 Stock Information</h1>
-        <div class="search-container">
-            <input type="text" id="stockSymbol" placeholder="Enter a stock symbol (e.g., AAPL)">
-            <button id="searchButton">Search</button>
+    <div class="container">
+        <header class="main-header">
+            <h1>Stock Analysis</h1>
+            <nav>
+                <a href="youtube.html">View YouTube Feed</a>
+            </nav>
+        </header>
+
+        <div class="card">
+            <div class="search-container">
+                <input type="text" id="stockSymbol" placeholder="Enter a stock symbol (e.g., AAPL)">
+                <button id="searchButton">Search</button>
+            </div>
         </div>
-        <div id="stockInfo" class="results-container"></div>
-        <div id="newsInfo" class="results-container news-card"></div>
-    </main>
-    <script src="script.js"></script>
+
+        <div class="card-grid">
+            <div id="stockInfo" class="card" style="display: none;"></div>
+            <div id="newsInfo" class="card" style="display: none;"></div>
+        </div>
+    </div>
+    <script src="stock.js"></script>
 </body>
 </html>
