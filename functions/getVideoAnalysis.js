@@ -1,5 +1,5 @@
 // Using modern 'import' syntax
-import { getStore } from '@netlify/blobs';
+import { connectLambda, getStore } from '@netlify/blobs';
 import { YoutubeTranscript } from 'youtube-transcript';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -24,6 +24,7 @@ export const handler = async (event) => {
         return { statusCode: 400, body: JSON.stringify({ error: 'Video ID is required.' }) };
     }
 
+    connectLambda(event)
     const summariesStore = getStore('summaries');
 
     try {
