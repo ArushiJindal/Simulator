@@ -48,10 +48,23 @@ function fetchStockOverview(symbol) {
                 return;
             }
             const commentary = generateHealthCommentary(data);
+            
+            // --- This section has been updated to add the details back ---
             stockInfoDiv.innerHTML = `
                 <h2>${data.Name} (${data.Symbol})</h2>
+
+                <div class="info-grid" style="margin-bottom: 1.5rem;">
+                    <div class="info-item"><strong>Exchange:</strong> ${data.Exchange}</div>
+                    <div class="info-item"><strong>Country:</strong> ${data.Country}</div>
+                    <div class="info-item"><strong>Currency:</strong> ${data.Currency}</div>
+                </div>
+                <div class="info-item" style="margin-bottom: 1.5rem;">
+                    <strong>Address:</strong> ${data.Address}
+                </div>
+
                 <p><strong>Description:</strong> ${data.Description}</p>
-                <h3>Financial Health Commentary</h3>
+
+                <h3 style="margin-top: 2rem;">Financial Health Commentary</h3>
                 ${commentary}
             `;
         })

@@ -134,3 +134,35 @@ button:hover {
     width: 120px;
     border-radius: 8px;
 }
+
+.summary-controls {
+    margin-top: 0.75rem;
+    border-top: 1px solid #e9ecef;
+    padding-top: 0.75rem;
+}
+
+.summarize-btn {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+    background-color: #28a745; /* Green color */
+}
+
+.summarize-btn:hover {
+    background-color: #218838;
+}
+
+
+.summary-content {
+    margin-top: 1rem;
+    background-color: #e9f7ef;
+    border-left: 4px solid #28a745;
+    padding: 1rem;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    
+    /* ADD THESE LINES */
+    max-height: 250px; /* Set a maximum height */
+    overflow-y: auto;  /* Add a scrollbar if content overflows */
+    overflow-wrap: break-word; /* Break long words if necessary */
+}
