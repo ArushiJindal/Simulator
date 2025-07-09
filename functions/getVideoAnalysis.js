@@ -2,7 +2,7 @@
 // import { connectLambda, getStore } from '@netlify/blobs';
 import { Pool } from 'pg';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-const fetch = (url, init) => import('node-fetch').then(module => module.default(url, init));
+// const fetch = (url, init) => import('node-fetch').then(module => module.default(url, init));
 
 // Initialize the AI client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);

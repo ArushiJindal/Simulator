@@ -1,5 +1,5 @@
 // ⚙️ This line was missing or incorrect. It imports the 'fetch' function.
-const fetch = (url, init) => import('node-fetch').then(module => module.default(url, init));
+// const fetch = (url, init) => import('node-fetch').then(module => module.default(url, init));
 
 exports.handler = async function(event) {
     const symbol = event.queryStringParameters.symbol;

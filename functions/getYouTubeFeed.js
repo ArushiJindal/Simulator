@@ -1,4 +1,4 @@
-const fetch = (url, init) => import('node-fetch').then(module => module.default(url, init));
+// const fetch = (url, init) => import('node-fetch').then(module => module.default(url, init));
 import { Pool } from 'pg';
 
 //  const channels = [

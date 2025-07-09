@@ -17,7 +17,6 @@
     "@netlify/blobs": "^10.0.4",
     "@netlify/neon": "^0.1.0",
     "drizzle-orm": "^0.44.2",
-    "node-fetch": "^3.3.2",
     "pg": "^8.16.3",
     "youtube-transcript": "^1.2.1"
   },
