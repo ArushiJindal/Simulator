@@ -9,6 +9,4 @@
   timeout = 120
 
 
-[functions."getTradingInsights"]
-  timeout = 120
 

@@ -27,36 +27,59 @@ function fetchStockData() {
 }
 
 // This function now ONLY fetches the trading insights
+// Replace your existing fetchTradingInsights function in stock.js
+
 function fetchTradingInsights() {
     const symbol = document.getElementById('stockSymbol').value.toUpperCase();
     const insightsCard = document.getElementById('insightsCard');
-    
-    // Hide other cards and show the insights card
+
+    if (!symbol) return;
+
     document.getElementById('stockInfo').style.display = 'none';
     document.getElementById('newsInfo').style.display = 'none';
     insightsCard.style.display = 'block';
+    insightsCard.innerHTML = `<h2>Trading Insights for ${symbol}</h2><p>Checking for recent analysis...</p>`;
 
-    if (!symbol) {
-        insightsCard.innerHTML = `<h2>Trading Insights</h2><p>Please enter a stock symbol first.</p>`;
-        return;
-    }
+    // Call the "starter" function
+    fetch('/.netlify/functions/requestTradingInsights', {
+        method: 'POST',
+        body: JSON.stringify({ symbol })
+    })
+    .then(response => {
+        // If status is 200 (OK), a recent insight exists.
+        // If status is 202 (Accepted), a new job has been started.
+        // In BOTH cases, we should start polling for the result.
+        if (response.status === 200 || response.status === 202) {
+            insightsCard.innerHTML = `<h2>Trading Insights for ${symbol}</h2><p>✅ Analysis in progress. The result will appear here automatically.</p>`;
+            pollForInsight(symbol, insightsCard);
+        } else {
+            insightsCard.innerHTML = `<h2>Trading Insights for ${symbol}</h2><p>❌ Could not start or retrieve analysis.</p>`;
+        }
+    })
+    .catch(error => {
+        console.error('Error requesting trading insights:', error);
+        insightsCard.innerHTML = `<h2>Trading Insights for ${symbol}</h2><p>An error occurred.</p>`;
+    });
+}
 
-    insightsCard.innerHTML = `<h2>Trading Insights for ${symbol}</h2><p>Generating insights...</p>`;
-
-    fetch(`/.netlify/functions/getTradingInsights?symbol=${symbol}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                insightsCard.innerHTML = `<h2>Trading Insights for ${symbol}</h2><p>${data.error}</p>`;
-            } else {
-                const formattedInsight = data.insight.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
-                insightsCard.innerHTML = `<h2>Trading Insights for ${symbol}</h2><div>${formattedInsight}</div>`;
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching trading insights:', error);
-            insightsCard.innerHTML = `<h2>Trading Insights for ${symbol}</h2><p>An error occurred.</p>`;
-        });
+function pollForInsight(symbol, container) {
+    // Check for the result every 5 seconds
+    const intervalId = setInterval(() => {
+        fetch(`/.netlify/functions/getInsightStatus?symbol=${symbol}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'complete') {
+                    clearInterval(intervalId); // Stop polling
+                    const formattedInsight = data.insight.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                    container.innerHTML = `<h2>Trading Insights for ${symbol}</h2><div>${formattedInsight}</div>`;
+                }
+                // If status is "pending", we do nothing and let the interval continue
+            })
+            .catch(error => {
+                console.error('Polling error:', error);
+                clearInterval(intervalId); // Stop polling on error
+            });
+    }, 5000); // Poll every 5 seconds
 }
 
 

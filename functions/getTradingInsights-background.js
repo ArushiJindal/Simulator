@@ -8,40 +8,18 @@ const pool = new Pool({
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+
 export const handler = async (event) => {
-    const { symbol } = event.queryStringParameters;
+    const { symbol } = JSON.parse(event.body);
     if (!symbol) {
-        return { statusCode: 400, body: JSON.stringify({ error: 'Stock symbol is required.' }) };
+        console.error('Background function invoked without a symbol.');
+        return { statusCode: 400 };
     }
 
     try {
-        // 1. Check for a cached insight in the database
-        const dbResult = await pool.query('SELECT insight, generatedAt FROM trading_insights WHERE symbol = $1', [symbol]);
-
-        if (dbResult.rows.length > 0) {
-            const cachedData = dbResult.rows[0];
-            const twoDaysAgo = new Date();
-            twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-            
-            // 2. If the insight is recent (less than 2 days old), return it
-            if (new Date(cachedData.generatedat) > twoDaysAgo) {
-                console.log(`Cache HIT for trading insight: ${symbol}`);
-                return { statusCode: 200, body: JSON.stringify({ insight: cachedData.insight }) };
-            }
-        }
-
-        // 3. If no recent insight exists, generate a new one
-        console.log(`Cache MISS for trading insight: ${symbol}. Generating new insight.`);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
-        // Define the grounding tool
-        const groundingTool = {
-        googleSearch: {},
-        };
-
-        const aiconfig = {
-        tools: [groundingTool],
-        };
-
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" }); // Using a model that supports grounding
+        
         const prompt = `
             You are a seasoned stock market analyst providing trading insights and expert in high speed momentum trading for stock market.
             Analyze the stock with the ticker symbol "${symbol}" on the followling points. Make use of internet search while performing your analysis about "${symbol}".
@@ -61,27 +39,33 @@ export const handler = async (event) => {
             If you don't know, skip it.
         `;
 
+        const groundingTool = [{
+        googleSearch: {},
+        }];
         
         const aiResult = await model.generateContent({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
-          aiconfig
+          tools: groundingTool
         });
         
         const newInsight = aiResult.response.text();
 
-        // 4. Save the new insight to the database, replacing any old one
         const upsertQuery = `
-            INSERT INTO trading_insights (symbol, insight, generatedAt)
+            INSERT INTO trading_insights (symbol, insight, "generatedat")
             VALUES ($1, $2, NOW())
             ON CONFLICT (symbol) DO UPDATE
-            SET insight = EXCLUDED.insight, generatedAt = EXCLUDED.generatedAt;
+            SET insight = EXCLUDED.insight, "generatedAt" = EXCLUDED.generatedat;
         `;
         await pool.query(upsertQuery, [symbol, newInsight]);
         
-        return { statusCode: 200, body: JSON.stringify({ insight: newInsight }) };
+        console.log(`Successfully generated insight for ${symbol}`);
+        return { statusCode: 200 };
 
     } catch (error) {
-        console.error('Error in getTradingInsights function:', error);
-        return { statusCode: 500, body: JSON.stringify({ error: 'Failed to generate trading insights.' }) };
+        console.error(`Failed during background insight generation for ${symbol}:`, error);
+        return { statusCode: 500 };
     }
 };
+
+
+
