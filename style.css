@@ -166,3 +166,29 @@ button:hover {
     overflow-y: auto;  /* Add a scrollbar if content overflows */
     overflow-wrap: break-word; /* Break long words if necessary */
 }
+
+
+/* Add these styles for the new channel selector */
+.channel-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.channel-btn {
+    background-color: #e9ecef;
+    color: #495057;
+    font-weight: 600;
+    border: 1px solid #dee2e6;
+}
+
+.channel-btn:hover {
+    background-color: #dee2e6;
+}
+
+.channel-btn.active {
+    background-color: #007bff;
+    color: #ffffff;
+    border-color: #007bff;
+}
