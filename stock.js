@@ -79,7 +79,7 @@ function pollForInsight(symbol, container) {
                 console.error('Polling error:', error);
                 clearInterval(intervalId); // Stop polling on error
             });
-    }, 5000); // Poll every 5 seconds
+    }, 2000); // Poll every 5 seconds
 }
 
 

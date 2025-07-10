@@ -42,6 +42,8 @@ export const handler = async (event) => {
         const groundingTool = [{
         googleSearch: {},
         }];
+
+        console.log(`Gen AI model thinking.... ${symbol}`);
         
         const aiResult = await model.generateContent({
           contents: [{ role: "user", parts: [{ text: prompt }] }],

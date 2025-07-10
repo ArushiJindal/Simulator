@@ -52,6 +52,6 @@ export const handler = async (event) => {
     // Return an "Accepted" status to indicate the job has started
     return {
         statusCode: 202,
-        body: JSON.stringify({ message: 'Trading insight analysis has been started.' })
+        body: JSON.stringify({ message: 'Trading insight analysis will be available shortly' })
     };
 };
