@@ -14,10 +14,15 @@ export const handler = async (event) => {
 
     try {
         // Check for a recent, valid insight in the database first
-        const twoDaysAgo = new Date();
-        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+        const queryText = `
+            SELECT insight FROM trading_insights 
+            WHERE symbol = $1 AND generatedat > NOW() - INTERVAL '2 days'
+        `;
+
+
         
-        const result = await pool.query('SELECT insight FROM trading_insights WHERE symbol = $1 AND generatedat > $2', [symbol, twoDaysAgo]);
+        const result = await pool.query(queryText, [symbol]);
 
         // If a recent insight is found, do NOT start a new job.
         if (result.rows.length > 0) {
