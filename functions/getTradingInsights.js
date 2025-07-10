@@ -33,6 +33,15 @@ export const handler = async (event) => {
         // 3. If no recent insight exists, generate a new one
         console.log(`Cache MISS for trading insight: ${symbol}. Generating new insight.`);
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+        // Define the grounding tool
+        const groundingTool = {
+        googleSearch: {},
+        };
+
+        const aiconfig = {
+        tools: [groundingTool],
+        };
+
         const prompt = `
             You are a seasoned stock market analyst providing trading insights and expert in high speed momentum trading for stock market.
             Analyze the stock with the ticker symbol "${symbol}" on the followling points. Make use of internet search while performing your analysis about "${symbol}".
@@ -52,13 +61,10 @@ export const handler = async (event) => {
             If you don't know, skip it.
         `;
 
-        const tools = [{
-          googleSearchRetrieval: {}
-        }];
         
         const aiResult = await model.generateContent({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
-          tools: tools,
+          aiconfig
         });
         
         const newInsight = aiResult.response.text();
