@@ -54,7 +54,7 @@ export const handler = async (event) => {
             INSERT INTO trading_insights (symbol, insight, "generatedat")
             VALUES ($1, $2, NOW())
             ON CONFLICT (symbol) DO UPDATE
-            SET insight = EXCLUDED.insight, "generatedAt" = EXCLUDED.generatedat;
+            SET insight = EXCLUDED.insight, "generatedat" = EXCLUDED.generatedat;
         `;
         await pool.query(upsertQuery, [symbol, newInsight]);
         
