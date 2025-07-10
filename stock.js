@@ -90,20 +90,48 @@ function fetchStockOverview(symbol) {
     fetch(`/.netlify/functions/getStockInfo?symbol=${symbol}`)
         .then(response => response.json())
         .then(data => {
-            if (data.Note || data.Information || Object.keys(data).length === 0) {
+            if (data.error || !data.overview || !data.quote) {
                 stockInfoDiv.innerHTML = `<h2>Stock Overview</h2><p>No data found for the symbol: <strong>${symbol}</strong>.</p>`;
                 return;
             }
-            // const commentary = generateHealthCommentary(data);
-            const commentary = "SKIP COMMENTARY"
+
+            const overview = data.overview;
+            const quote = data.quote;
+            const commentary = generateHealthCommentary(overview);
+
+            // Extract and format price data
+            const currentPrice = parseFloat(quote['05. price']).toFixed(2);
+            const change = parseFloat(quote['09. change']);
+            const changePercent = parseFloat(quote['10. change percent'].replace('%','')).toFixed(2);
+            const isPositive = change >= 0;
+            const changeClass = isPositive ? 'positive' : 'negative';
+            const changeSign = isPositive ? '+' : '';
+
             stockInfoDiv.innerHTML = `
-                <h2>${data.Name} (${data.Symbol})</h2>
-                <div class="info-grid" style="margin-bottom: 1.5rem;"><div class="info-item"><strong>Exchange:</strong> ${data.Exchange}</div><div class="info-item"><strong>Country:</strong> ${data.Country}</div><div class="info-item"><strong>Currency:</strong> ${data.Currency}</div></div>
-                <div class="info-item" style="margin-bottom: 1.5rem;"><strong>Address:</strong> ${data.Address}</div>
-                <p><strong>Description:</strong> ${data.Description}</p>
-                <h3 style="margin-top: 2rem;">Financial Health Commentary</h3>
+                <h2>${overview.Name} (${overview.Symbol})</h2>
+                
+                <div class="price-quote">
+                    <span class="price">$${currentPrice}</span>
+                    <span class="change ${changeClass}">
+                        ${changeSign}${change.toFixed(2)} (${changeSign}${changePercent}%)
+                    </span>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-item"><strong>Exchange:</strong> ${overview.Exchange}</div>
+                    <div class="info-item"><strong>Country:</strong> ${overview.Country}</div>
+                    <div class="info-item"><strong>Currency:</strong> ${overview.Currency}</div>
+                </div>
+
+                <p><strong>Description:</strong> ${overview.Description}</p>
+
+                <h3>Financial Health Commentary</h3>
                 ${commentary}
             `;
+        })
+        .catch(error => {
+            console.error('Error fetching stock overview:', error);
+            stockInfoDiv.innerHTML = `<h2>Stock Overview</h2><p>An error occurred while fetching stock data.</p>`;
         });
 }
 
