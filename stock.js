@@ -8,11 +8,16 @@ document.getElementById('stockSymbol').addEventListener('keyup', function(event)
     }
 });
 
+document.getElementById('insightsButton').addEventListener('click', fetchTradingInsights);
+
+
 /**
  * Main function to orchestrate fetching stock and news data.
  */
 function fetchStockData() {
     const symbol = document.getElementById('stockSymbol').value.toUpperCase();
+    const insightsButton = document.getElementById('insightsButton'); // Get the button
+    
     
     // Get references to the display cards
     const stockInfoDiv = document.getElementById('stockInfo');
@@ -26,8 +31,13 @@ function fetchStockData() {
 
     if (!symbol) {
         stockInfoDiv.innerHTML = `<h2>Stock Overview</h2><p>Please enter a stock symbol.</p>`;
+        insightsButton.style.display = 'none'; // Hide button if no symbol
+        
         return;
     }
+
+    insightsButton.style.display = 'inline-block'; // --- ADD THIS to show the button on search
+    
     
     // Fetch both sets of data
     fetchStockOverview(symbol);
@@ -47,7 +57,6 @@ function fetchStockOverview(symbol) {
                 stockInfoDiv.innerHTML = `<h2>Stock Overview</h2><p>No data found for the symbol: <strong>${symbol}</strong>.</p>`;
                 return;
             }
-            const commentary = generateHealthCommentary(data);
             
             // --- This section has been updated to add the details back ---
             stockInfoDiv.innerHTML = `
@@ -63,9 +72,6 @@ function fetchStockOverview(symbol) {
                 </div>
 
                 <p><strong>Description:</strong> ${data.Description}</p>
-
-                <h3 style="margin-top: 2rem;">Financial Health Commentary</h3>
-                ${commentary}
             `;
         })
         .catch(error => {
@@ -174,4 +180,31 @@ function generateHealthCommentary(data) {
 
     commentary += '</ul>';
     return commentary;
+}
+
+
+function fetchTradingInsights() {
+    const symbol = document.getElementById('stockSymbol').value.toUpperCase();
+    const insightsCard = document.getElementById('insightsCard');
+
+    if (!symbol) return; // Should not happen if button is visible, but a good check
+
+    insightsCard.style.display = 'block';
+    insightsCard.innerHTML = `<h2>Trading Insights for ${symbol}</h2><p>Generating insights...</p>`;
+
+    fetch(`/.netlify/functions/getTradingInsights?symbol=${symbol}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                insightsCard.innerHTML = `<h2>Trading Insights for ${symbol}</h2><p>${data.error}</p>`;
+            } else {
+                // Use a library like 'marked' or a simple regex for basic markdown
+                const formattedInsight = data.insight.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                insightsCard.innerHTML = `<h2>Trading Insights for ${symbol}</h2><div>${formattedInsight}</div>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching trading insights:', error);
+            insightsCard.innerHTML = `<h2>Trading Insights for ${symbol}</h2><p>An error occurred.</p>`;
+        });
 }
