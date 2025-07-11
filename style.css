@@ -219,13 +219,6 @@ button:hover {
     line-height: 1.2;
 }
 
-.positive {
-    color: #28a745; /* Green */
-}
-
-.negative {
-    color: #dc3545; /* Red */
-}
 
 .new-video-icon {
     margin-left: 0.5rem;
@@ -237,4 +230,60 @@ button:hover {
 /* Make the icon colorful when the button is active/selected */
 .channel-btn.active .new-video-icon {
     filter: grayscale(0%);
+}
+
+/* Add these styles for the Alpaca news feed */
+.news-feed-container {
+    margin-top: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.alpaca-news-item {
+    border-bottom: 1px solid #e9ecef;
+    padding: 0.75rem 0;
+}
+
+.alpaca-news-item:first-child {
+    padding-top: 0;
+}
+
+.alpaca-news-item a {
+    text-decoration: none;
+    color: #0056b3;
+    font-weight: 600;
+}
+
+.alpaca-news-item p {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+
+.news-quote {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+.positive {
+    color: #28a745;
+}
+
+.negative {
+    color: #dc3545;
+}
+
+.news-controls {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+/* Style for the toggle button when it's active */
+#toggleNewsRefreshBtn.active {
+    background-color: #dc3545; /* Red, indicating it can be stopped */
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.5);
 }

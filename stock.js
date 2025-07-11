@@ -2,6 +2,7 @@
 document.getElementById('searchButton').addEventListener('click', fetchStockData);
 document.getElementById('insightsButton').addEventListener('click', fetchTradingInsights);
 
+
 // This function now ONLY fetches the stock overview and news
 function fetchStockData() {
     const symbol = document.getElementById('stockSymbol').value.toUpperCase();
@@ -178,3 +179,84 @@ function generateHealthCommentary(data) {
     commentary += '</ul>';
     return commentary;
 }
+
+
+
+
+// --- Replace the entire Alpaca news block at the end of stock.js ---
+
+const displayedAlpacaNewsIds = new Set();
+const alpacaNewsContainer = document.getElementById('alpacaNewsContainer');
+const fetchNewsBtn = document.getElementById('fetchNewsBtn');
+const toggleNewsRefreshBtn = document.getElementById('toggleNewsRefreshBtn');
+
+let newsIntervalId = null; // Variable to hold our timer
+
+// This function fetches and displays the news
+function fetchAndDisplayAlpacaNews() {
+    // Show a subtle loading indicator
+    fetchNewsBtn.disabled = true;
+
+    fetch('/.netlify/functions/getAlpacaNewsWithQuotes')
+        .then(response => response.json())
+        .then(enrichedNewsArray => {
+            const newArticles = enrichedNewsArray.filter(article => !displayedAlpacaNewsIds.has(article.id));
+
+            if (newArticles.length > 0) {
+                newArticles.reverse().forEach(article => {
+                    const articleEl = document.createElement('div');
+                    articleEl.className = 'alpaca-news-item';
+                    
+                    const formattedDate = new Date(article.created_at).toLocaleString('en-US', {
+                        month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+                    });
+
+                    let quoteHTML = '';
+                    if (article.quote) {
+                        const price = parseFloat(article.quote['05. price']).toFixed(2);
+                        const changePercent = parseFloat(article.quote['10. change percent'].replace('%','')).toFixed(2);
+                        const isPositive = parseFloat(article.quote['09. change']) >= 0;
+                        const changeClass = isPositive ? 'positive' : 'negative';
+                        const changeSign = isPositive ? '+' : '';
+                        
+                        quoteHTML = `<span class="news-quote ${changeClass}">
+                                        (${article.quote['01. symbol']}: $${price}, ${changeSign}${changePercent}%)
+                                    </span>`;
+                    }
+
+                    articleEl.innerHTML = `
+                        <a href="${article.url}" target="_blank" rel="noopener noreferrer">${article.headline}</a> ${quoteHTML}
+                        <p>${article.symbols.join(', ')} - ${formattedDate}</p>
+                    `;
+                    
+                    alpacaNewsContainer.prepend(articleEl);
+                    displayedAlpacaNewsIds.add(article.id);
+                });
+            }
+        })
+        .catch(error => console.error('Error fetching Alpaca news:', error))
+        .finally(() => {
+            fetchNewsBtn.disabled = false; // Re-enable the button
+        });
+}
+
+// Event listener for the "Fetch Now" button
+fetchNewsBtn.addEventListener('click', fetchAndDisplayAlpacaNews);
+
+// Event listener for the "Start/Pause" toggle button
+toggleNewsRefreshBtn.addEventListener('click', () => {
+    // If the interval is not running, start it
+    if (newsIntervalId === null) {
+        fetchAndDisplayAlpacaNews(); // Fetch immediately
+        // Start fetching every 2 minutes
+        newsIntervalId = setInterval(fetchAndDisplayAlpacaNews, 120000); 
+        toggleNewsRefreshBtn.textContent = 'Pause Auto-Refresh';
+        toggleNewsRefreshBtn.classList.add('active');
+    } else {
+        // If it is running, stop it
+        clearInterval(newsIntervalId);
+        newsIntervalId = null;
+        toggleNewsRefreshBtn.textContent = 'Start Auto-Refresh';
+        toggleNewsRefreshBtn.classList.remove('active');
+    }
+});
