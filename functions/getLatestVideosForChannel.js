@@ -1,16 +1,4 @@
-// const fetch = (url, init) => import('node-fetch').then(module => module.default(url, init));
 import { Pool } from 'pg';
-
-//  const channels = [
-//         { name: 'Lets Talk Money', id: 'UCbKdotYtcY9SxoU8CYAXdvg' },
-//         { name: 'Joseph Carlson After Hours', id: 'UCfCT7SSFEWyG4th9ZmaGYqQ' },
-//         { name: 'Joseph Carlson', id: 'UCbta0n8i6Rljh0obO7HzG9A' },
-//         { name: 'Travelling Trader', id: 'UCWt3Cx6RrHX86_yF4I7f1LA' }
-
-        
-//         // Add more channels here
-//     ];
-
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
@@ -25,17 +13,18 @@ export const handler = async (event) => {
     const API_KEY = process.env.YOUTUBE_API_KEY;
     const channelData = [];
 
-    // The uploads playlist ID is the channel ID with "UC" changed to "UU"
     const playlistId = channelId.replace(/^UC/, 'UU');
+    // Reverted to fetching just the 2 latest items
     const API_URL = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=2&key=${API_KEY}`;
     
     try {
         const response = await fetch(API_URL);
         const data = await response.json();
 
+        // Reverted to using data.items directly without filtering
         if (data.items && data.items.length > 0) {
+            console.log("Found youtube vides");
             const videoIds = data.items.map(item => item.snippet.resourceId.videoId);
-            // Check for cached summaries for these specific videos
             const summaryResult = await pool.query('SELECT videoId, content FROM summaries WHERE videoId = ANY($1::text[])', [videoIds]);
             
             const summaryMap = new Map();
