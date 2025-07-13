@@ -81,53 +81,55 @@ async function fetchTranscript(videoId) {
     }
 }
 
-// Using 'export const' for the handler
 export const handler = async (event) => {
-    const { videoId, channelName } = event.queryStringParameters;
+    const { videoId, action, channelName } = event.queryStringParameters;
 
     if (!videoId) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Video ID is required.' }) };
     }
 
     try {
-        // 1. Check for a cached summary in the Neon database
-        let summaryResult = await pool.query('SELECT content FROM summaries WHERE videoId = $1', [videoId]);
-        if (summaryResult.rows.length > 0) {
-            return { statusCode: 200, body: JSON.stringify({ summary: summaryResult.rows[0].content }) };
-        }
+        if (action === 'getTranscript') {
+            let transcriptResult = await pool.query('SELECT content FROM transcripts WHERE videoId = $1', [videoId]);
+            if (transcriptResult.rows.length > 0) {
+                return { statusCode: 200, body: JSON.stringify({ message: 'Transcript retrieved from cache.' }) };
+            }
 
-        let transcriptText;
-        // 2. Check for a cached transcript in the Neon database
-        let transcriptResult = await pool.query('SELECT content FROM transcripts WHERE videoId = $1', [videoId]);
-        if (transcriptResult.rows.length > 0) {
-            transcriptText = transcriptResult.rows[0].content;
-        } else {
-            transcriptText = await fetchTranscript(videoId);
+            const transcriptText = await fetchTranscript(videoId);
             if (!transcriptText) {
-                return { statusCode: 404, body: JSON.stringify({ summary: 'Transcript could not be retrieved.' }) };
+                return { statusCode: 404, body: JSON.stringify({ error: 'Transcript could not be retrieved.' }) };
             }
             await pool.query('INSERT INTO transcripts (videoId, content) VALUES ($1, $2)', [videoId, transcriptText]);
+            return { statusCode: 200, body: JSON.stringify({ message: 'Transcript fetched and saved.' }) };
+
+        } else if (action === 'getSummary') {
+            let summaryResult = await pool.query('SELECT content FROM summaries WHERE videoId = $1', [videoId]);
+            if (summaryResult.rows.length > 0) {
+                return { statusCode: 200, body: JSON.stringify({ summary: summaryResult.rows[0].content }) };
+            }
+            
+            let transcriptResult = await pool.query('SELECT content FROM transcripts WHERE videoId = $1', [videoId]);
+            if (transcriptResult.rows.length === 0) {
+                return { statusCode: 404, body: JSON.stringify({ summary: 'Transcript not found. Please fetch the transcript first.' }) };
+            }
+            const transcriptText = transcriptResult.rows[0].content;
+
+            // const defaultPrompt = `You are an expert financial analyst...`; // Your full default prompt
+            // const rossCameronPrompt = `You are an expert day trading analyst...`; // Your full Ross Cameron prompt
+            let promptToUse = (channelName === 'Ross Cameron') ? rossCameronPrompt : defaultPrompt;
+            promptToUse += transcriptText;
+
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+            const aiResult = await model.generateContent(promptToUse);
+            const newSummary = aiResult.response.text();
+
+            await pool.query('INSERT INTO summaries (videoId, content) VALUES ($1, $2)', [videoId, newSummary]);
+            return { statusCode: 200, body: JSON.stringify({ summary: newSummary }) };
+        } else {
+            return { statusCode: 400, body: JSON.stringify({ error: 'Invalid action.' }) };
         }
-        
-        // 3. Choose the prompt based on the channel name
-        let promptToUse = (channelName === 'Ross Cameron') ? rossCameronPrompt : defaultPrompt;
-        promptToUse += transcriptText; // Append the transcript to the chosen prompt
-
-        // 4. Generate the summary
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
-        const aiResult = await model.generateContent(promptToUse);
-        const newSummary = aiResult.response.text();
-
-        // 5. Save the new summary to the Neon database
-        await pool.query('INSERT INTO summaries (videoId, content) VALUES ($1, $2)', [videoId, newSummary]);
-        
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ summary: newSummary }),
-        };
-
     } catch (error) {
-        console.error('Error in getVideoAnalysis function:', error);
-        return { statusCode: 500, body: JSON.stringify({ summary: 'Failed to generate summary.' }) };
+        console.error('Error in manageVideoData function:', error);
+        return { statusCode: 500, body: JSON.stringify({ error: 'An internal error occurred.' }) };
     }
 };

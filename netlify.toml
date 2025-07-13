@@ -5,8 +5,8 @@
   functions = "functions/"
 
 
-[functions."getVideoAnalysis"]
-  timeout = 120
+[functions."manageVideoData"]
+  timeout = 25
 
 
 

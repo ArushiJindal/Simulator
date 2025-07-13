@@ -1,39 +1,60 @@
-// The hardcoded channel list is now gone from this file.
+// This event listener runs once when the page is ready.
+document.addEventListener('DOMContentLoaded', setupChannelSelector);
 
-document.addEventListener('DOMContentLoaded', () => {
+// This single event listener handles all button clicks on the page.
+document.addEventListener('click', handleButtonClick);
+
+/**
+ * Fetches the channel list and creates the selector buttons.
+ */
+function setupChannelSelector() {
     const channelSelector = document.getElementById('channel-selector');
-    
     channelSelector.innerHTML = '<p>Loading channels...</p>';
 
-    // Fetch the channel list and their statuses directly from our backend function
     fetch('/.netlify/functions/getChannelUpdateStatus')
         .then(res => res.json())
         .then(channelsWithStatus => {
             channelSelector.innerHTML = '';
-            
-            // Dynamically create a button for each channel returned from the API
             channelsWithStatus.forEach(channel => {
                 const button = document.createElement('button');
                 button.className = 'channel-btn';
                 button.innerHTML = `${channel.name} ${channel.hasNewVideo ? '<span class="new-video-icon">🔥</span>' : ''}`;
-                
                 button.dataset.channelId = channel.id;
                 button.dataset.channelName = channel.name;
                 channelSelector.appendChild(button);
             });
-
-            channelSelector.addEventListener('click', handleChannelSelection);
         })
         .catch(error => {
             console.error("Could not fetch channel statuses:", error);
             channelSelector.innerHTML = '<p>Could not load channels.</p>';
         });
-});
+}
 
-function handleChannelSelection(event) {
-    const clickedButton = event.target.closest('.channel-btn');
-    if (!clickedButton) return;
+/**
+ * Handles all button clicks and directs them to the right function.
+ */
+function handleButtonClick(event) {
+    const button = event.target.closest('button');
+    if (!button) return; // Ignore clicks that aren't on a button
 
+    const action = button.dataset.action;
+    const videoId = button.dataset.videoId;
+    const channelId = button.dataset.channelId;
+    const channelName = button.dataset.channelName;
+
+    if (channelId && !action) {
+        handleChannelSelection(button);
+    } else if (action === 'getTranscript') {
+        handleGetTranscript(videoId, button);
+    } else if (action === 'getSummary') {
+        handleGetSummary(videoId, button);
+    }
+}
+
+/**
+ * Fetches and displays videos for a selected channel.
+ */
+function handleChannelSelection(clickedButton) {
     document.querySelectorAll('.channel-btn').forEach(btn => btn.classList.remove('active'));
     clickedButton.classList.add('active');
 
@@ -48,19 +69,34 @@ function handleChannelSelection(event) {
         .then(response => response.json())
         .then(data => {
             let videosHTML = `<h2>Latest from ${channelName} (Newest First)</h2>`;
-
-            // --- NEW: Check if the data is an array before using .forEach ---
-            if (!Array.isArray(data)) {
-                console.error('Backend did not return an array:', data);
-                videosHTML += '<p>An error occurred while fetching videos for this channel.</p>';
-            } else if (data.length === 0) {
+            if (!Array.isArray(data) || data.length === 0) {
                 videosHTML += '<p>No standard videos found for this channel.</p>';
             } else {
                 data.forEach(item => {
                     const videoUrl = `https://api.supadata.ai/v1/transcript?url=https://www.youtube.com/watch?v=TLqq6M3mmrE&text=true{item.videoId}`;
                     const formattedDate = new Date(item.publishedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+                    // --- NEW: Logic to determine initial button/summary state ---
+                    let controlsHTML = '';
+                    let summaryHTML = '';
+                    let summaryStyle = 'display: none;';
+
+                    if (item.summary) {
+                        // If a summary exists, show it
+                        controlsHTML = '<p style="color: #28a745; font-weight: bold;">Analysis Complete</p>';
+                        summaryHTML = item.summary;
+                        summaryStyle = 'display: block;';
+                    } else if (item.hasTranscript) {
+                        // If only a transcript exists, show the "Generate Summary" button
+                        controlsHTML = `<button class="summarize-btn" data-video-id="${item.videoId}" data-action="getSummary">Generate Summary</button>`;
+                    } else {
+                        // If neither exists, show the "Get Transcript" button
+                        controlsHTML = `<button class="summarize-btn" data-video-id="${item.videoId}" data-action="getTranscript">Get Transcript</button>`;
+                    }
+                    // --- End of new logic ---
+
                     videosHTML += `
-                        <div class="video-item">
+                        <div class="video-item" data-channel-name="${item.channelName}">
                             <a href="${videoUrl}" target="_blank" rel="noopener noreferrer"><img src="${item.thumbnail}" alt="Video thumbnail"></a>
                             <div>
                                 <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${item.title}</a>
@@ -69,10 +105,10 @@ function handleChannelSelection(event) {
                                     <span>${formattedDate}</span>
                                 </div>
                                 <div class="summary-controls">
-                                    ${!item.summary ? `<button class="summarize-btn" data-video-id="${item.videoId}">Analyze & Summarize</button>` : ''}
+                                    ${controlsHTML}
                                 </div>
-                                <div class="summary-content" style="${item.summary ? 'display: block;' : 'display: none;'}">
-                                    ${item.summary || ''}
+                                <div class="summary-content" style="${summaryStyle}">
+                                    ${summaryHTML}
                                 </div>
                             </div>
                         </div>
@@ -80,52 +116,54 @@ function handleChannelSelection(event) {
                 });
             }
             videoResultsContainer.innerHTML = videosHTML;
-        })
-        .catch(error => {
-            console.error('Error fetching YouTube feed:', error);
-            videoResultsContainer.innerHTML = `<h2>Latest from ${channelName}</h2><p>An error occurred while loading videos.</p>`;
         });
 }
 
-document.addEventListener('click', function(event) {
-    if (event.target && event.target.classList.contains('summarize-btn')) {
-        const button = event.target;
-        const videoId = button.dataset.videoId;
-        const channelName = button.closest('.video-item').querySelector('.video-meta span').textContent.replace('from ', '');
-        const summaryContainer = button.closest('.video-item').querySelector('.summary-content');
-        
-        button.disabled = true;
-        button.textContent = 'Analyzing...';
-        summaryContainer.style.display = 'block';
-        summaryContainer.innerHTML = '<p>Generating summary, this may take a moment...</p>';
-        
-        // FIX: The variable here should be 'summaryContainer', not 'container'.
-        fetchAndDisplaySummary(videoId, summaryContainer, button, channelName);
-    }
-});
+/**
+ * Handles the "Get Transcript" button click.
+ */
+function handleGetTranscript(videoId, button) {
+    button.disabled = true;
+    button.textContent = 'Fetching Transcript...';
 
-// This function now sends the channelName to the backend
-function fetchAndDisplaySummary(videoId, container, button, channelName) {
-    // Add the channelName as a query parameter
-    const apiUrl = `/.netlify/functions/getVideoAnalysis?videoId=${videoId}&channelName=${encodeURIComponent(channelName)}`;
-
-    fetch(apiUrl)
+    fetch(`/.netlify/functions/manageVideoData?action=getTranscript&videoId=${videoId}`)
         .then(response => response.json())
         .then(data => {
-            if (data.summary && !data.summary.includes('could not be retrieved')) {
-                container.innerHTML = data.summary;
-                button.textContent = 'Analysis Complete';
-                button.style.backgroundColor = '#28a745';
+            if (data.error) { throw new Error(data.error); }
+            const controls = button.parentElement;
+            controls.innerHTML = `<button class="summarize-btn" data-video-id="${videoId}" data-action="getSummary">Generate Summary</button>`;
+        })
+        .catch(error => {
+            console.error('Error fetching transcript:', error);
+            button.textContent = 'Transcript Failed';
+        });
+}
+
+/**
+ * Handles the "Generate Summary" button click.
+ */
+function handleGetSummary(videoId, button) {
+    const summaryContainer = button.closest('.video-item').querySelector('.summary-content');
+    const channelName = button.closest('.video-item').dataset.channelName;
+    
+    button.disabled = true;
+    button.textContent = 'Generating...';
+    summaryContainer.style.display = 'block';
+    summaryContainer.innerHTML = '<p>Generating summary, this may take a moment...</p>';
+
+    fetch(`/.netlify/functions/manageVideoData?action=getSummary&videoId=${videoId}&channelName=${encodeURIComponent(channelName)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.summary) {
+                summaryContainer.innerHTML = data.summary;
+                button.parentElement.innerHTML = '<p style="color: #28a745; font-weight: bold;">Analysis Complete</p>';
             } else {
-                container.innerHTML = `<p style="color: #856404;">Analysis Failed: ${data.summary || data.error}</p>`;
-                button.textContent = 'Analysis Failed';
-                button.style.backgroundColor = '#ffc107';
+                throw new Error(data.error || 'Failed to generate summary.');
             }
         })
         .catch(error => {
             console.error('Error fetching summary:', error);
-            container.innerHTML = '<p style="color: #D8000C;">Sorry, an unexpected error occurred.</p>';
-            button.textContent = 'Error';
-            button.style.backgroundColor = '#dc3545';
+            summaryContainer.innerHTML = `<p style="color: #D8000C;">${error.message}</p>`;
+            button.textContent = 'Summary Failed';
         });
 }

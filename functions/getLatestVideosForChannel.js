@@ -1,7 +1,8 @@
 import { Pool } from 'pg';
 
+
 const pool = new Pool({
-  connectionString: process.env.NETLIFY_DATABASE_URL,
+  connectionString: process.env.NETLIFY_DATABASE_URL ,
 });
 
 export const handler = async (event) => {
@@ -14,21 +15,26 @@ export const handler = async (event) => {
     const channelData = [];
 
     const playlistId = channelId.replace(/^UC/, 'UU');
-    // Reverted to fetching just the 2 latest items
     const API_URL = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=2&key=${API_KEY}`;
     
     try {
         const response = await fetch(API_URL);
         const data = await response.json();
 
-        // Reverted to using data.items directly without filtering
         if (data.items && data.items.length > 0) {
-            console.log("Found youtube vides");
             const videoIds = data.items.map(item => item.snippet.resourceId.videoId);
-            const summaryResult = await pool.query('SELECT videoId, content FROM summaries WHERE videoId = ANY($1::text[])', [videoIds]);
+
+            // Fetch existing summaries and transcripts in parallel
+            const [summaryResult, transcriptResult] = await Promise.all([
+                pool.query('SELECT videoId, content FROM summaries WHERE videoId = ANY($1::text[])', [videoIds]),
+                pool.query('SELECT videoId FROM transcripts WHERE videoId = ANY($1::text[])', [videoIds])
+            ]);
             
             const summaryMap = new Map();
             summaryResult.rows.forEach(row => summaryMap.set(row.videoid, row.content));
+
+            const transcriptSet = new Set();
+            transcriptResult.rows.forEach(row => transcriptSet.add(row.videoid));
             
             for (const item of data.items) {
                 const video = item.snippet;
@@ -38,7 +44,8 @@ export const handler = async (event) => {
                     title: video.title,
                     thumbnail: video.thumbnails.medium.url,
                     publishedAt: video.publishedAt,
-                    summary: summaryMap.get(video.resourceId.videoId) || null
+                    summary: summaryMap.get(video.resourceId.videoId) || null,
+                    hasTranscript: transcriptSet.has(video.resourceId.videoId) // Add this new flag
                 });
             }
         }
