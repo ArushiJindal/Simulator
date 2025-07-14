@@ -31,12 +31,18 @@
 
         <div id="alpacaNewsCard" class="card">
             <h2>Live News Feed</h2>
-            <div class="news-controls">
-            <button id="fetchNewsBtn">Fetch Now</button>
+        
+        <div class="news-search-container">
+            <input type="text" id="newsSymbolInput" placeholder="News for a specific symbol...">
+            <button id="searchNewsBtn">Search News</button>
+        </div>
+        
+        <div class="news-controls">
+            <button id="fetchNewsBtn">Fetch General News</button>
             <button id="toggleNewsRefreshBtn">Start Auto-Refresh</button>
+        </div>
+        <div id="alpacaNewsContainer" class="news-feed-container">
             </div>
-            <div id="alpacaNewsContainer" class="news-feed-container">
-    </div>
         </div>
 
             <div id="insightsCard" class="card" style="display: none;"></div>

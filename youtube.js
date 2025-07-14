@@ -73,27 +73,24 @@ function handleChannelSelection(clickedButton) {
                 videosHTML += '<p>No standard videos found for this channel.</p>';
             } else {
                 data.forEach(item => {
-                    const videoUrl = `https://api.supadata.ai/v1/transcript?url=https://www.youtube.com/watch?v=TLqq6M3mmrE&text=true{item.videoId}`;
+                    // --- FIX: Use the correct, standard YouTube watch URL ---
+                    const videoUrl = `https://www.youtube.com/watch?v=...{item.videoId}`;
+                    
                     const formattedDate = new Date(item.publishedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-                    // --- NEW: Logic to determine initial button/summary state ---
                     let controlsHTML = '';
                     let summaryHTML = '';
                     let summaryStyle = 'display: none;';
 
                     if (item.summary) {
-                        // If a summary exists, show it
                         controlsHTML = '<p style="color: #28a745; font-weight: bold;">Analysis Complete</p>';
                         summaryHTML = item.summary;
                         summaryStyle = 'display: block;';
                     } else if (item.hasTranscript) {
-                        // If only a transcript exists, show the "Generate Summary" button
                         controlsHTML = `<button class="summarize-btn" data-video-id="${item.videoId}" data-action="getSummary">Generate Summary</button>`;
                     } else {
-                        // If neither exists, show the "Get Transcript" button
                         controlsHTML = `<button class="summarize-btn" data-video-id="${item.videoId}" data-action="getTranscript">Get Transcript</button>`;
                     }
-                    // --- End of new logic ---
 
                     videosHTML += `
                         <div class="video-item" data-channel-name="${item.channelName}">

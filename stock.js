@@ -181,25 +181,46 @@ function generateHealthCommentary(data) {
 }
 
 
-
-
 // --- Replace the entire Alpaca news block at the end of stock.js ---
 
 const displayedAlpacaNewsIds = new Set();
 const alpacaNewsContainer = document.getElementById('alpacaNewsContainer');
 const fetchNewsBtn = document.getElementById('fetchNewsBtn');
 const toggleNewsRefreshBtn = document.getElementById('toggleNewsRefreshBtn');
+const searchNewsBtn = document.getElementById('searchNewsBtn');
+const newsSymbolInput = document.getElementById('newsSymbolInput');
 
-let newsIntervalId = null; // Variable to hold our timer
+let newsIntervalId = null;
 
-// This function fetches and displays the news
-function fetchAndDisplayAlpacaNews() {
-    // Show a subtle loading indicator
-    fetchNewsBtn.disabled = true;
+/**
+ * Fetches and displays Alpaca news. Can be filtered by symbols.
+ * @param {string|null} symbols - A stock symbol to filter by, or null for general news.
+ */
+function fetchAndDisplayAlpacaNews(symbols = null) {
+    const fetchBtn = symbols ? searchNewsBtn : fetchNewsBtn;
+    fetchBtn.disabled = true;
+    fetchBtn.textContent = 'Fetching...';
 
-    fetch('/.netlify/functions/getAlpacaNewsWithQuotes')
-        .then(response => response.json())
+    // This is the key part: it builds the URL with the symbol if it exists.
+    let apiUrl = '/.netlify/functions/getAlpacaNewsWithQuotes';
+    if (symbols) {
+        apiUrl += `?symbols=${symbols}`;
+    }
+
+    fetch(apiUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Server responded with status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(enrichedNewsArray => {
+            // If it's a new search for a specific symbol, clear the container first
+            if (symbols) {
+                alpacaNewsContainer.innerHTML = '';
+                displayedAlpacaNewsIds.clear();
+            }
+
             const newArticles = enrichedNewsArray.filter(article => !displayedAlpacaNewsIds.has(article.id));
 
             if (newArticles.length > 0) {
@@ -219,9 +240,7 @@ function fetchAndDisplayAlpacaNews() {
                         const changeClass = isPositive ? 'positive' : 'negative';
                         const changeSign = isPositive ? '+' : '';
                         
-                        quoteHTML = `<span class="news-quote ${changeClass}">
-                                        (${article.quote['01. symbol']}: $${price}, ${changeSign}${changePercent}%)
-                                    </span>`;
+                        quoteHTML = `<span class="news-quote ${changeClass}">(${article.quote['01. symbol']}: $${price}, ${changeSign}${changePercent}%)</span>`;
                     }
 
                     articleEl.innerHTML = `
@@ -232,28 +251,49 @@ function fetchAndDisplayAlpacaNews() {
                     alpacaNewsContainer.prepend(articleEl);
                     displayedAlpacaNewsIds.add(article.id);
                 });
+            } else if (!symbols) {
+                const noNewEl = document.createElement('div');
+                noNewEl.className = 'alpaca-news-item';
+                noNewEl.innerHTML = `<p><em>No new articles found.</em></p>`;
+                alpacaNewsContainer.prepend(noNewEl);
+                setTimeout(() => noNewEl.remove(), 3000);
             }
         })
-        .catch(error => console.error('Error fetching Alpaca news:', error))
+        .catch(error => {
+            console.error('FETCH FAILED:', error);
+            alpacaNewsContainer.innerHTML = `<p style="color: red;">Failed to load news.</p>`;
+        })
         .finally(() => {
-            fetchNewsBtn.disabled = false; // Re-enable the button
+            fetchBtn.disabled = false;
+            fetchBtn.textContent = symbols ? 'Search News' : 'Fetch General News';
         });
 }
 
-// Event listener for the "Fetch Now" button
-fetchNewsBtn.addEventListener('click', fetchAndDisplayAlpacaNews);
+// Event listener for the "Search News" button
+searchNewsBtn.addEventListener('click', () => {
+    const symbol = newsSymbolInput.value.toUpperCase();
+    if (symbol) {
+        if (newsIntervalId) {
+            clearInterval(newsIntervalId);
+            newsIntervalId = null;
+            toggleNewsRefreshBtn.textContent = 'Start Auto-Refresh';
+            toggleNewsRefreshBtn.classList.remove('active');
+        }
+        fetchAndDisplayAlpacaNews(symbol);
+    }
+});
+
+// Event listener for the "Fetch General News" button
+fetchNewsBtn.addEventListener('click', () => fetchAndDisplayAlpacaNews());
 
 // Event listener for the "Start/Pause" toggle button
 toggleNewsRefreshBtn.addEventListener('click', () => {
-    // If the interval is not running, start it
     if (newsIntervalId === null) {
-        fetchAndDisplayAlpacaNews(); // Fetch immediately
-        // Start fetching every 2 minutes
-        newsIntervalId = setInterval(fetchAndDisplayAlpacaNews, 120000); 
+        fetchAndDisplayAlpacaNews();
+        newsIntervalId = setInterval(() => fetchAndDisplayAlpacaNews(), 120000); 
         toggleNewsRefreshBtn.textContent = 'Pause Auto-Refresh';
         toggleNewsRefreshBtn.classList.add('active');
     } else {
-        // If it is running, stop it
         clearInterval(newsIntervalId);
         newsIntervalId = null;
         toggleNewsRefreshBtn.textContent = 'Start Auto-Refresh';

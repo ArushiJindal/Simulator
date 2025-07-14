@@ -3,7 +3,7 @@
 exports.handler = async function(event) {
     const symbol = event.queryStringParameters.symbol;
     const API_KEY = process.env.ALPHA_VANTAGE_API_KEY;
-    const API_URL = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${symbol}&apikey=${API_KEY}&limit=10`;
+    const API_URL = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${symbol}&apikey=${API_KEY}&limit=20$sort=LATEST`;
 
     try {
         const response = await fetch(API_URL);
