@@ -27,11 +27,9 @@ export const handler = async (event) => {
 
         
             - **Current Trend:** Is the sentiment bullish, bearish, or neutral based on recent price action?
-            - **Key Support & Resistance Levels:** Identify important price levels to watch on a daily 1 day candlestick chart. Also mention resistance at 200MA
-            - **Potential Catalyst:** What is one upcoming event or factor that could significantly move the stock price?
+            - **Potential Catalyst:** What are the most important upcoming event or factor that could significantly move the stock price and acts as a catalyst?
             - **Short Interest:** What is the short interest and likelihood for short squeeze
             - **Outstanding Float:** What is the public float, and whether any dilution happened in past 1 year and any shelf registration for future dilution.
-            - **History:** Whether it made big moves recently in past 1 year and had jackknive moves making the stock risky. I am looking for nasty letdowns.
             - **Recent filings or news:** Any recent news or filings I should be aware of which will influence my decision.
             - ** Recent IPO or Reverse Split:** - Give any information on whether the stock went thought recent reverse split or whether its a new IPO.
 
