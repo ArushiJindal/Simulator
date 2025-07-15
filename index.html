@@ -3,44 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Analysis Dashboard</title>
+    <title>Financial Dashboard</title>
     <link rel="stylesheet" href="style.css">
-    </head>
+</head>
 <body>
     <div class="container">
         <header class="main-header">
-            <h1>Stock Analysis Dashboard</h1>
-            </header>
+            <h1>Financial Dashboard</h1>
+            <nav>
+                <a href="youtube.html">YouTube Analysis Feed</a>
+            </nav>
+        </header>
 
         <main>
+            <div class="card search-area">
+                <h1>Market Search</h1>
+                <div class="search-container">
+                    <input type="text" id="searchInput" placeholder="Enter a stock symbol...">
+                    <button id="searchSymbolBtn">Search Symbol</button>
+                    <button id="generalNewsBtn">Show General News</button>
+                    <div id="autoRefreshContainer"></div>
+                </div>
+            </div>
+
             <div class="dashboard-grid">
-                <div class="card search-area">
-                    <div class="search-container">
-                        <input type="text" id="stockSymbol" placeholder="Enter a stock symbol (e.g., AAPL)">
-                        <button id="searchButton">Search</button>
-                    </div>
-                </div>
-
-                <div class="main-content-col">
-                    <div id="stockInfo" class="card" style="display: none;">
-                        </div>
-                </div>
-
-                <div class="sidebar-col">
-                    <div class="card">
-                        <h2>Live News Feed (Alpaca)</h2>
-                        <p>View a real-time news feed powered by Alpaca.</p>
-                        <a href="news.html" class="nav-button">Go to Live News</a>
-                    </div>
-                    <div class="card">
-                        <h2>Trading Insights</h2>
-                        <p>Check out video analysis and AI-powered summaries.</p>
-                        <a href="youtube.html" class="nav-button">Go to YouTube Feed</a>
-                    </div>
-                </div>
-            </div> </main>
+                <div id="stockInfoContainer" class="main-content-col"></div>
+                <div id="newsFeedContainer" class="sidebar-col"></div>
+            </div>
+        </main>
     </div>
     
-    <script src="stock.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
