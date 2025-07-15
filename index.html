@@ -3,51 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Information</title>
+    <title>Stock Analysis Dashboard</title>
     <link rel="stylesheet" href="style.css">
-</head>
+    </head>
 <body>
     <div class="container">
         <header class="main-header">
-            <h1>Stock Analysis</h1>
-            <nav>
-                <a href="youtube.html">View YouTube Feed</a>
-            </nav>
-        </header>
+            <h1>Stock Analysis Dashboard</h1>
+            </header>
 
-        <div class="card">
-            <div class="search-container">
-                <input type="text" id="stockSymbol" placeholder="Enter a stock symbol (e.g., AAPL)">
-            </div>
-            <div class="search-container" style="margin-top: 1rem;">
-                <button id="searchButton">Get Stock Info</button>
-                <button id="insightsButton">Get Trading Insights</button>
-            </div>
-        </div>
+        <main>
+            <div class="dashboard-grid">
+                <div class="card search-area">
+                    <div class="search-container">
+                        <input type="text" id="stockSymbol" placeholder="Enter a stock symbol (e.g., AAPL)">
+                        <button id="searchButton">Search</button>
+                    </div>
+                </div>
 
-        <div class="card-grid">
-            <div id="stockInfo" class="card" style="display: none;"></div>
-            <div id="newsInfo" class="card" style="display: none;"></div>
+                <div class="main-content-col">
+                    <div id="stockInfo" class="card" style="display: none;">
+                        </div>
+                </div>
 
-        <div id="alpacaNewsCard" class="card">
-            <h2>Live News Feed</h2>
-        
-        <div class="news-search-container">
-            <input type="text" id="newsSymbolInput" placeholder="News for a specific symbol...">
-            <button id="searchNewsBtn">Search News</button>
-        </div>
-        
-        <div class="news-controls">
-            <button id="fetchNewsBtn">Fetch General News</button>
-            <button id="toggleNewsRefreshBtn">Start Auto-Refresh</button>
-        </div>
-        <div id="alpacaNewsContainer" class="news-feed-container">
-            </div>
-        </div>
-
-            <div id="insightsCard" class="card" style="display: none;"></div>
-        </div>
+                <div class="sidebar-col">
+                    <div class="card">
+                        <h2>Live News Feed</h2>
+                        <p>View a real-time news feed from Alpaca.</p>
+                        <a href="news.html" class="nav-button">Go to Live News</a>
+                    </div>
+                    <div class="card">
+                        <h2>Trading Insights</h2>
+                        <p>Check out video analysis and AI-powered summaries.</p>
+                        <a href="youtube.html" class="nav-button">Go to YouTube Feed</a>
+                    </div>
+                </div>
+            </div> </main>
     </div>
+    
     <script src="stock.js"></script>
 </body>
 </html>
