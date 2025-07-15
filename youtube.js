@@ -33,21 +33,26 @@ function setupChannelSelector() {
 /**
  * Handles all button clicks and directs them to the right function.
  */
+/**
+ * Handles all button clicks and directs them to the right function.
+ */
 function handleButtonClick(event) {
     const button = event.target.closest('button');
-    if (!button) return; // Ignore clicks that aren't on a button
+    if (!button) return;
 
-    const action = button.dataset.action;
-    const videoId = button.dataset.videoId;
-    const channelId = button.dataset.channelId;
-    const channelName = button.dataset.channelName;
+    // --- DEBUG LINE ---
+    // This will tell us if the click is being registered.
+    console.log('Button clicked:', button);
 
-    if (channelId && !action) {
+    if (button.parentElement.id === 'channel-selector') {
         handleChannelSelection(button);
-    } else if (action === 'getTranscript') {
-        handleGetTranscript(videoId, button);
-    } else if (action === 'getSummary') {
-        handleGetSummary(videoId, button);
+    } else if (button.dataset.action === 'startAnalysis') {
+        const videoId = button.dataset.videoId;
+        const channelName = button.closest('.video-item').dataset.channelName;
+        const summaryContainer = button.closest('.video-item').querySelector('.summary-content');
+        
+        console.log(`[DEBUG] Starting analysis for videoId: ${videoId}`); // DEBUG LINE
+        handleStartAnalysis(videoId, channelName, summaryContainer, button);
     }
 }
 
@@ -73,11 +78,9 @@ function handleChannelSelection(clickedButton) {
                 videosHTML += '<p>No standard videos found for this channel.</p>';
             } else {
                 data.forEach(item => {
-                    // --- FIX: Use the correct, standard YouTube watch URL ---
-                    const videoUrl = `https://www.youtube.com/watch?v=...{item.videoId}`;
-                    
+                    const videoUrl = `https://api.supadata.ai/v1/youtube/transcript?url=https://www.youtube.com/watch?v={item.videoId}`;
                     const formattedDate = new Date(item.publishedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
+                    
                     let controlsHTML = '';
                     let summaryHTML = '';
                     let summaryStyle = 'display: none;';
@@ -86,10 +89,9 @@ function handleChannelSelection(clickedButton) {
                         controlsHTML = '<p style="color: #28a745; font-weight: bold;">Analysis Complete</p>';
                         summaryHTML = item.summary;
                         summaryStyle = 'display: block;';
-                    } else if (item.hasTranscript) {
-                        controlsHTML = `<button class="summarize-btn" data-video-id="${item.videoId}" data-action="getSummary">Generate Summary</button>`;
                     } else {
-                        controlsHTML = `<button class="summarize-btn" data-video-id="${item.videoId}" data-action="getTranscript">Get Transcript</button>`;
+                        // This ensures the correct button is created with the right action
+                        controlsHTML = `<button class="summarize-btn" data-video-id="${item.videoId}" data-action="startAnalysis">Analyze & Summarize</button>`;
                     }
 
                     videosHTML += `
@@ -97,16 +99,9 @@ function handleChannelSelection(clickedButton) {
                             <a href="${videoUrl}" target="_blank" rel="noopener noreferrer"><img src="${item.thumbnail}" alt="Video thumbnail"></a>
                             <div>
                                 <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${item.title}</a>
-                                <div class="video-meta">
-                                    <span>from ${item.channelName}</span>
-                                    <span>${formattedDate}</span>
-                                </div>
-                                <div class="summary-controls">
-                                    ${controlsHTML}
-                                </div>
-                                <div class="summary-content" style="${summaryStyle}">
-                                    ${summaryHTML}
-                                </div>
+                                <div class="video-meta"><span>from ${item.channelName}</span><span>${formattedDate}</span></div>
+                                <div class="summary-controls">${controlsHTML}</div>
+                                <div class="summary-content" style="${summaryStyle}">${summaryHTML}</div>
                             </div>
                         </div>
                     `;
@@ -117,50 +112,42 @@ function handleChannelSelection(clickedButton) {
 }
 
 /**
- * Handles the "Get Transcript" button click.
+ * Starts the background analysis job and begins polling for results.
  */
-function handleGetTranscript(videoId, button) {
+function handleStartAnalysis(videoId, channelName, container, button) {
     button.disabled = true;
-    button.textContent = 'Fetching Transcript...';
+    button.textContent = 'Requesting...';
+    container.style.display = 'block';
+    container.innerHTML = '';
 
-    fetch(`/.netlify/functions/manageVideoData?action=getTranscript&videoId=${videoId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) { throw new Error(data.error); }
-            const controls = button.parentElement;
-            controls.innerHTML = `<button class="summarize-btn" data-video-id="${videoId}" data-action="getSummary">Generate Summary</button>`;
-        })
-        .catch(error => {
-            console.error('Error fetching transcript:', error);
-            button.textContent = 'Transcript Failed';
-        });
+    fetch('/.netlify/functions/requestVideoAnalysis', {
+        method: 'POST',
+        body: JSON.stringify({ videoId, channelName })
+    }).then(response => {
+        if (response.status === 202) {
+            button.textContent = 'Analyzing...';
+            container.innerHTML = '<p>✅ Analysis started. The result will appear here automatically.</p>';
+            pollForResult(videoId, container, button);
+        } else {
+            button.textContent = 'Request Failed';
+            container.innerHTML = '<p>❌ Could not start the analysis job.</p>';
+        }
+    });
 }
 
 /**
- * Handles the "Generate Summary" button click.
+ * Checks the status of the analysis every 10 seconds until it's complete.
  */
-function handleGetSummary(videoId, button) {
-    const summaryContainer = button.closest('.video-item').querySelector('.summary-content');
-    const channelName = button.closest('.video-item').dataset.channelName;
-    
-    button.disabled = true;
-    button.textContent = 'Generating...';
-    summaryContainer.style.display = 'block';
-    summaryContainer.innerHTML = '<p>Generating summary, this may take a moment...</p>';
-
-    fetch(`/.netlify/functions/manageVideoData?action=getSummary&videoId=${videoId}&channelName=${encodeURIComponent(channelName)}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.summary) {
-                summaryContainer.innerHTML = data.summary;
-                button.parentElement.innerHTML = '<p style="color: #28a745; font-weight: bold;">Analysis Complete</p>';
-            } else {
-                throw new Error(data.error || 'Failed to generate summary.');
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching summary:', error);
-            summaryContainer.innerHTML = `<p style="color: #D8000C;">${error.message}</p>`;
-            button.textContent = 'Summary Failed';
-        });
+function pollForResult(videoId, container, button) {
+    const intervalId = setInterval(() => {
+        fetch(`/.netlify/functions/getAnalysisStatus?videoId=${videoId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'complete') {
+                    clearInterval(intervalId); // Stop polling
+                    container.innerHTML = data.summary;
+                    button.parentElement.innerHTML = '<p style="color: #28a745; font-weight: bold;">Analysis Complete</p>';
+                }
+            });
+    }, 10000); // Check every 10 seconds
 }

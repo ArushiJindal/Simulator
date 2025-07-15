@@ -81,55 +81,52 @@ async function fetchTranscript(videoId) {
     }
 }
 
+
 export const handler = async (event) => {
-    const { videoId, action, channelName } = event.queryStringParameters;
-
+    const { videoId, channelName } = JSON.parse(event.body);
     if (!videoId) {
-        return { statusCode: 400, body: JSON.stringify({ error: 'Video ID is required.' }) };
+        return { statusCode: 400 };
     }
-
+    
     try {
-        if (action === 'getTranscript') {
-            let transcriptResult = await pool.query('SELECT content FROM transcripts WHERE videoId = $1', [videoId]);
-            if (transcriptResult.rows.length > 0) {
-                return { statusCode: 200, body: JSON.stringify({ message: 'Transcript retrieved from cache.' }) };
-            }
-
-            const transcriptText = await fetchTranscript(videoId);
-            if (!transcriptText) {
-                return { statusCode: 404, body: JSON.stringify({ error: 'Transcript could not be retrieved.' }) };
-            }
-            await pool.query('INSERT INTO transcripts (videoId, content) VALUES ($1, $2)', [videoId, transcriptText]);
-            return { statusCode: 200, body: JSON.stringify({ message: 'Transcript fetched and saved.' }) };
-
-        } else if (action === 'getSummary') {
-            let summaryResult = await pool.query('SELECT content FROM summaries WHERE videoId = $1', [videoId]);
-            if (summaryResult.rows.length > 0) {
-                return { statusCode: 200, body: JSON.stringify({ summary: summaryResult.rows[0].content }) };
-            }
-            
-            let transcriptResult = await pool.query('SELECT content FROM transcripts WHERE videoId = $1', [videoId]);
-            if (transcriptResult.rows.length === 0) {
-                return { statusCode: 404, body: JSON.stringify({ summary: 'Transcript not found. Please fetch the transcript first.' }) };
-            }
-            const transcriptText = transcriptResult.rows[0].content;
-
-            // const defaultPrompt = `You are an expert financial analyst...`; // Your full default prompt
-            // const rossCameronPrompt = `You are an expert day trading analyst...`; // Your full Ross Cameron prompt
-            let promptToUse = (channelName === 'Ross Cameron') ? rossCameronPrompt : defaultPrompt;
-            promptToUse += transcriptText;
-
-            const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
-            const aiResult = await model.generateContent(promptToUse);
-            const newSummary = aiResult.response.text();
-
-            await pool.query('INSERT INTO summaries (videoId, content) VALUES ($1, $2)', [videoId, newSummary]);
-            return { statusCode: 200, body: JSON.stringify({ summary: newSummary }) };
-        } else {
-            return { statusCode: 400, body: JSON.stringify({ error: 'Invalid action.' }) };
+        // 1. Check if the summary already exists. If so, the job is already done.
+        const summaryCheck = await pool.query('SELECT 1 FROM summaries WHERE videoId = $1', [videoId]);
+        if (summaryCheck.rows.length > 0) {
+            console.log(`Summary for ${videoId} already exists. Exiting background job.`);
+            return { statusCode: 200 };
         }
+
+        // 2. No summary. Check for a cached transcript.
+        let transcriptText;
+        const transcriptResult = await pool.query('SELECT content FROM transcripts WHERE videoId = $1', [videoId]);
+        if (transcriptResult.rows.length > 0) {
+            transcriptText = transcriptResult.rows[0].content;
+        } else {
+            // 3. No transcript. Fetch a new one and save it.
+            transcriptText = await fetchTranscript(videoId);
+            if (!transcriptText) { throw new Error('Transcript could not be retrieved.'); }
+            await pool.query('INSERT INTO transcripts (videoId, content) VALUES ($1, $2) ON CONFLICT (videoId) DO NOTHING', [videoId, transcriptText]);
+        }
+
+        // 4. Now that we have a transcript, generate the summary.
+        let promptToUse = (channelName === 'Ross Cameron') ? rossCameronPrompt : defaultPrompt;
+        promptToUse += transcriptText;
+
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+        const aiResult = await model.generateContent(promptToUse);
+        const newSummary = aiResult.response.text();
+
+        // 5. Save the final summary to the database.
+        await pool.query('INSERT INTO summaries (videoId, content) VALUES ($1, $2) ON CONFLICT (videoId) DO UPDATE SET content = EXCLUDED.content', [videoId, newSummary]);
+        console.log(`Successfully generated and cached summary for ${videoId}`);
+        
+        return { statusCode: 200 };
+
     } catch (error) {
-        console.error('Error in manageVideoData function:', error);
-        return { statusCode: 500, body: JSON.stringify({ error: 'An internal error occurred.' }) };
+        console.error(`Failed during background analysis for ${videoId}:`, error);
+        return { statusCode: 500 };
     }
 };
+
+
+
