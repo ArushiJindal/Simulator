@@ -1,139 +1,52 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Element References ---
     const searchButton = document.getElementById('searchSymbolBtn');
     const searchInput = document.getElementById('searchInput');
-    const newsRefreshBtn = document.getElementById('newsRefreshBtn');
-    
-    // --- State Variables ---
-    let newsIntervalId = null; 
-    let countdownIntervalId = null;
-    const REFRESH_SECONDS = 120; // 2 minutes
 
-    // --- Event Listeners ---
     searchButton.addEventListener('click', handleSymbolSearch);
     searchInput.addEventListener('keyup', (event) => {
         if (event.key === "Enter") handleSymbolSearch();
     });
-    newsRefreshBtn.addEventListener('click', handleNewsRefreshToggle);
 
-    // --- Main Functions ---
+    fetchGlobeNewswire();
 
     function handleSymbolSearch() {
-        stopAutoRefresh();
         const symbol = searchInput.value.toUpperCase().trim();
         if (!symbol) {
             alert('Please enter a stock symbol.');
             return;
         }
         fetchStockData(symbol);
-        fetchAlpacaNews(symbol);
     }
-
-    /**
-     * Toggles the news auto-refresh on and off.
-     */
-    function handleNewsRefreshToggle() {
-        if (newsIntervalId) {
-            // If the timer is running, stop it.
-            stopAutoRefresh();
-        } else {
-            // If the timer is not running, start it.
-            fetchAlpacaNews(null); // Fetch immediately
-            newsIntervalId = setInterval(() => fetchAlpacaNews(null), REFRESH_SECONDS * 1000);
-            startCountdown();
-            this.classList.add('active');
-        }
-    }
-    
-    function stopAutoRefresh() {
-        if (newsIntervalId) {
-            clearInterval(newsIntervalId);
-            clearInterval(countdownIntervalId);
-            newsIntervalId = null;
-            countdownIntervalId = null;
-            newsRefreshBtn.textContent = 'Start Auto-Refresh';
-            newsRefreshBtn.classList.remove('active');
-        }
-    }
-    
-    function startCountdown() {
-        let secondsRemaining = REFRESH_SECONDS;
-        
-        // Update the text immediately so the user sees the change
-        newsRefreshBtn.textContent = `Pause Auto-Refresh (${Math.floor(secondsRemaining / 60)}:${(secondsRemaining % 60).toString().padStart(2, '0')})`;
-        
-        countdownIntervalId = setInterval(() => {
-            secondsRemaining--;
-            const minutes = Math.floor(secondsRemaining / 60);
-            const seconds = secondsRemaining % 60;
-            
-            newsRefreshBtn.textContent = `Pause Auto-Refresh (${minutes}:${seconds.toString().padStart(2, '0')})`;
-
-            if (secondsRemaining <= 0) {
-                secondsRemaining = REFRESH_SECONDS;
-            }
-        }, 1000);
-    }
-
-    function fetchAlpacaNews(symbol) {
-        const newsContainer = document.getElementById('newsFeedContainer');
-        const stockContainer = document.getElementById('stockInfoContainer');
-        const title = symbol ? `News for ${symbol}` : 'General News Feed';
-        
-        if (!symbol && newsRefreshBtn.textContent === "Show News Feed") {
-            // If it's the very first click on general news, clear stock info
-            stockContainer.innerHTML = '';
-        }
-        newsContainer.innerHTML = `<div class="card"><h2>${title} (Alpaca)</h2><p>Loading news...</p></div>`;
-
-        let apiUrl = '/.netlify/functions/getAlpacaNewsWithQuotes';
-        if (symbol) {
-            apiUrl += `?symbols=${symbol}`;
-        }
-
-        fetch(apiUrl)
-            .then(response => response.json())
-            .then(enrichedNewsArray => {
-                let newsHTML = '';
-                if (!Array.isArray(enrichedNewsArray) || enrichedNewsArray.length === 0) {
-                    newsHTML = '<p>No news found.</p>';
-                } else {
-                    enrichedNewsArray.slice(0, 20).forEach(article => {
-                         const formattedDate = new Date(article.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                         let quoteHTML = '';
-                         if (article.quote && article.symbols[0] !== symbol) {
-                            const changePercent = parseFloat(article.quote['10. change percent'].replace('%','')).toFixed(2);
-                            const isPositive = parseFloat(article.quote['09. change']) >= 0;
-                            const changeClass = isPositive ? 'positive' : 'negative';
-                            const changeSign = isPositive ? '+' : '';
-                            quoteHTML = `<span class="news-quote ${changeClass}">(${article.quote['01. symbol']}: ${changeSign}${changePercent}%)</span>`;
-                         }
-                         newsHTML += `<div class="alpaca-news-item"><a href="${article.url}" target="_blank" rel="noopener noreferrer">${article.headline}</a> ${quoteHTML}<p>${article.symbols.join(', ')} - ${formattedDate}</p></div>`;
-                    });
-                }
-                newsContainer.innerHTML = `<div class="card"><h2>${title} (Alpaca)</h2><div class="news-feed-container">${newsHTML}</div></div>`;
-            })
-            .catch(error => {
-                console.error('Alpaca news fetch failed:', error);
-                newsContainer.innerHTML = `<div class="card"><h2>${title} (Alpaca)</h2><p style="color: red;">Could not load news feed.</p></div>`;
-            });
-    }
-
-
 
     function fetchStockData(symbol) {
-        // This function remains the same as before
         const stockContainer = document.getElementById('stockInfoContainer');
         stockContainer.innerHTML = '<div class="card"><h2>Stock Overview</h2><p>Loading...</p></div>';
+        
         fetch(`/.netlify/functions/getStockInfo?symbol=${symbol}`)
-            .then(response => { if (!response.ok) { throw new Error(`Network response was not ok (${response.status})`); } return response.json(); })
+            .then(response => response.json())
             .then(data => {
                 if (data.error || !data.overview || !data.quote || Object.keys(data.overview).length === 0) {
                     throw new Error(data.error || `No data found for symbol: ${symbol}`);
                 }
                 const overview = data.overview;
                 const quote = data.quote;
-                const stockHTML = `...`; // your existing HTML generation for stock info
+                const stockHTML = `
+                    <div class="card">
+                        <h2>${overview.Name} (${overview.Symbol})</h2>
+                        <div class="price-quote">
+                             <span class="price">$${parseFloat(quote['05. price']).toFixed(2)}</span>
+                            <span class="change ${parseFloat(quote['09. change']) >= 0 ? 'positive' : 'negative'}">
+                                ${parseFloat(quote['09. change']) >= 0 ? '+' : ''}${parseFloat(quote['09. change']).toFixed(2)} 
+                                (${parseFloat(quote['09. change']) >= 0 ? '+' : ''}${parseFloat(quote['10. change percent'].replace('%','')).toFixed(2)}%)
+                            </span>
+                        </div>
+                        <h3>Company Details</h3>
+                        <div class="info-grid">
+                            <div class="info-item"><strong>Sector:</strong> ${overview.Sector}</div>
+                            <div class="info-item"><strong>Industry:</strong> ${overview.Industry}</div>
+                            <div class="info-item"><strong>Market Cap:</strong> $${parseInt(overview.MarketCapitalization).toLocaleString()}</div>
+                        </div>
+                    </div>`;
                 stockContainer.innerHTML = stockHTML;
                 fetchStockNews(symbol);
             }).catch(error => {
@@ -142,14 +55,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    /**
-     * Fetches and appends news related to the specific stock (from Alpha Vantage).
-     */
     function fetchStockNews(symbol) {
-        const stockInfoDiv = document.getElementById('stockInfoContainer');
-        // This targets the first card inside the container
-        const card = stockInfoDiv.querySelector('.card');
-        if (!card) return; // Don't do anything if the stock card isn't there
+        const stockContainer = document.getElementById('stockInfoContainer');
+        const card = stockContainer.querySelector('.card');
+        if (!card) return;
         
         fetch(`/.netlify/functions/getStockNews?symbol=${symbol}`)
             .then(response => response.json())
@@ -162,9 +71,73 @@ document.addEventListener('DOMContentLoaded', () => {
                          const formattedDate = new Date(article.time_published.substring(0, 8)).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                          newsHTML += `<div class="news-item"><a href="${article.url}" target="_blank" rel="noopener noreferrer">${article.title}</a><div class="news-meta"><span>Source: ${article.source}</span><span>${formattedDate}</span></div></div>`;
                     });
-                    // Append the news HTML to the end of the stock info card
                     card.insertAdjacentHTML('beforeend', newsHTML);
                 }
             }).catch(error => console.error('Error fetching stock-specific news:', error));
     }
+
+function fetchGlobeNewswire() {
+    const container = document.getElementById('globeNewsContainer');
+    if (!container) return; 
+    
+    fetch('/.netlify/functions/getGlobeNewswireRss')
+        .then(response => response.json())
+        .then(articles => {
+            if (!Array.isArray(articles) || articles.length === 0) {
+                container.innerHTML = '<p>News is currently unavailable.</p>';
+                return;
+            }
+            
+            container.innerHTML = ''; // Clear the "Loading..." message
+            
+            articles.slice(0, 10).forEach(article => {
+                const articleEl = document.createElement('div');
+                articleEl.className = 'minimal-news-item';
+                
+                // --- FIX #1: More robust way to find the stock symbol ---
+                let symbols = (article.categories || [])
+                    .filter(cat => /^[A-Z]{1,5}$/.test(cat))
+                    .join(', ');
+
+                // If no symbol was in categories, check the title for (EXCHANGE:TICKER)
+                if (!symbols) {
+                    const match = article.title.match(/\((?:NASDAQ|NYSE|TSX|OTCQX|OTC|OTCQB):([A-Z\.]{1,5})\)/);
+                    if (match && match[1]) {
+                        symbols = match[1];
+                    }
+                }
+
+                // --- FIX #2: Safely parse and format the date ---
+                let formattedDate = '';
+                const dateSource = article.isoDate || article.pubDate; // Use isoDate or fallback to pubDate
+                if (dateSource) {
+                    const dateObj = new Date(dateSource);
+                    // Check if the created date is valid before trying to format it
+                    if (!isNaN(dateObj.getTime())) {
+                        formattedDate = dateObj.toLocaleString('en-US', {
+                            timeZone: 'America/New_York', // Eastern Time
+                            month: 'short',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true,
+                        });
+                    }
+                }
+                
+                articleEl.innerHTML = `
+                    <div class="minimal-news-content">
+                        <a href="${article.link}" target="_blank" rel="noopener noreferrer">${article.title}</a>
+                        ${formattedDate ? `<span class="news-timestamp">${formattedDate} ET</span>` : ''}
+                    </div>
+                    ${symbols ? `<span class="news-symbols">${symbols}</span>` : ''}
+                `;
+                container.appendChild(articleEl);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching GlobeNewswire feed:', error);
+            container.innerHTML = '<p>Could not load news feed.</p>';
+        });
+}
 });

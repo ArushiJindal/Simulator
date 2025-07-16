@@ -1,6 +1,5 @@
 import { Pool } from 'pg';
 
-// We do NOT import 'schedule' here. We use the globally available fetch.
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,

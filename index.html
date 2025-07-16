@@ -1,37 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial Dashboard</title>
     <link rel="stylesheet" href="style.css">
+    <link type='text/css' rel='stylesheet' href='https://www.globenewswire.com/content/css/gnw_widgetstyles.css' />
+</head>
 </head>
 <body>
     <div class="container">
         <header class="main-header">
             <h1>Financial Dashboard</h1>
             <nav>
-                <a href="youtube.html">YouTube Analysis Feed</a>
+                <a href="youtube.html">YouTube Analysis</a>
             </nav>
         </header>
 
         <main>
-            <div class="card search-area">
-                <h1>Market Search</h1>
-                <div class="search-container">
-                    <input type="text" id="searchInput" placeholder="Enter a stock symbol...">
-                    <button id="searchSymbolBtn">Search Symbol</button>
-                    <button id="newsRefreshBtn">Show News Feed</button>
-                </div>
-            </div>
-
             <div class="dashboard-grid">
-                <div id="stockInfoContainer" class="main-content-col"></div>
-                <div id="newsFeedContainer" class="sidebar-col"></div>
-            </div>
-        </main>
+
+                <div class="card search-area">
+                    <h1>Stock Search</h1>
+                    <div class="search-container">
+                        <input type="text" id="searchInput" placeholder="Enter a stock symbol...">
+                        <button id="searchSymbolBtn">Search Symbol</button>
+                    </div>
+                </div>
+
+                <div id="stockInfoContainer" class="main-content-col">
+                    </div>
+
+                <div class="sidebar-col">
+                    
+                <div class="card">
+                    <h2>GlobeNewswire</h2>
+                    <div class='widget__width-height--container'>
+                      <div id='gnw_widget' class='gnw_content_container'></div>
+                    </div>
+                </div>
+
+                    <div class="card">
+                        <h2>Live News Feed</h2>
+                        <p>Open a dedicated page for live news with more controls.</p>
+                        <a href="news.html" class="nav-button">Go to Live News</a>
+                    </div>
+                </div>
+
+            </div> </main>
     </div>
-    
     <script src="script.js"></script>
+    <script src='https://www.globenewswire.com/Scripts/gnw_widget.js' type='text/javascript'></script>
+    <script type='text/javascript'>
+      var userActivityUrl ='https://www.globenewswire.com/SocialMediaActivity/Log?activity=jsWidgetRefreshed&context=0';
+      GetWidget('http://www.globenewswire.com/JSonFeed/orgclass/1/feedTitle/GlobeNewswire - News about Public Companies?callback=?', 'Press Releases');
+    </script>
 </body>
 </html>

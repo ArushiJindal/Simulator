@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Get references to all interactive elements
+    // --- Element References ---
     const alpacaNewsContainer = document.getElementById('alpacaNewsContainer');
     const fetchNewsBtn = document.getElementById('fetchNewsBtn');
     const toggleNewsRefreshBtn = document.getElementById('toggleNewsRefreshBtn');
@@ -9,28 +9,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const displayedAlpacaNewsIds = new Set();
     let newsIntervalId = null;
 
-    // Attach all event listeners
-    fetchNewsBtn.addEventListener('click', () => fetchAndDisplayAlpacaNews());
-    searchNewsBtn.addEventListener('click', handleNewsSearch);
-    toggleNewsRefreshBtn.addEventListener('click', handleAutoRefreshToggle);
+    // --- Event Listeners ---
+    if (fetchNewsBtn) {
+        fetchNewsBtn.addEventListener('click', () => fetchAndDisplayAlpacaNews());
+    }
+    if (searchNewsBtn) {
+        searchNewsBtn.addEventListener('click', handleNewsSearch);
+    }
+    if (toggleNewsRefreshBtn) {
+        toggleNewsRefreshBtn.addEventListener('click', handleAutoRefreshToggle);
+    }
     
-    // Initial data load when the page is ready
+    // --- Initial Data Load ---
     fetchAndDisplayAlpacaNews();
 
-    /**
-     * Fetches and displays Alpaca news. Can be filtered by symbols.
-     * @param {string|null} symbols - A stock symbol to filter by, or null for general news.
-     */
+    // --- Function Definitions ---
     function fetchAndDisplayAlpacaNews(symbols = null) {
         const btn = symbols ? searchNewsBtn : fetchNewsBtn;
         btn.disabled = true;
         btn.textContent = 'Fetching...';
         
         let apiUrl = '/.netlify/functions/getAlpacaNewsWithQuotes';
-        if (symbols) apiUrl += `?symbols=${symbols}`;
+        if (symbols) {
+            apiUrl += `?symbols=${symbols}`;
+        }
 
         fetch(apiUrl)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error(`Server Error: ${response.status}`);
+                return response.json();
+            })
             .then(enrichedNewsArray => {
                 if (symbols) {
                     alpacaNewsContainer.innerHTML = '';
@@ -63,7 +71,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     setTimeout(() => noNewEl.remove(), 3000);
                 }
             })
-            .catch(error => console.error('Error fetching Alpaca news:', error))
+            .catch(error => {
+                console.error('Error fetching Alpaca news:', error);
+                alpacaNewsContainer.innerHTML = `<p style="color:red;">Could not load news feed.</p>`;
+            })
             .finally(() => {
                 btn.disabled = false;
                 btn.textContent = symbols ? 'Search News' : 'Fetch General News';
@@ -71,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleNewsSearch() {
-        const symbol = newsSymbolInput.value.toUpperCase();
+        const symbol = newsSymbolInput.value.toUpperCase().trim();
         if (symbol) {
             if (newsIntervalId) {
                 clearInterval(newsIntervalId);
@@ -86,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleAutoRefreshToggle() {
         if (newsIntervalId === null) {
             fetchAndDisplayAlpacaNews();
-            newsIntervalId = setInterval(() => fetchAndDisplayAlpacaNews(), 120000); 
+            newsIntervalId = setInterval(() => fetchAndDisplayAlpacaNews(), 120000);
             toggleNewsRefreshBtn.textContent = 'Pause Auto-Refresh';
             toggleNewsRefreshBtn.classList.add('active');
         } else {
