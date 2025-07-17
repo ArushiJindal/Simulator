@@ -19,41 +19,76 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function fetchStockData(symbol) {
-        const stockContainer = document.getElementById('stockInfoContainer');
-        stockContainer.innerHTML = '<div class="card"><h2>Stock Overview</h2><p>Loading...</p></div>';
-        
-        fetch(`/.netlify/functions/getStockInfo?symbol=${symbol}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.error || !data.overview || !data.quote || Object.keys(data.overview).length === 0) {
-                    throw new Error(data.error || `No data found for symbol: ${symbol}`);
-                }
-                const overview = data.overview;
-                const quote = data.quote;
-                const stockHTML = `
-                    <div class="card">
-                        <h2>${overview.Name} (${overview.Symbol})</h2>
-                        <div class="price-quote">
-                             <span class="price">$${parseFloat(quote['05. price']).toFixed(2)}</span>
-                            <span class="change ${parseFloat(quote['09. change']) >= 0 ? 'positive' : 'negative'}">
-                                ${parseFloat(quote['09. change']) >= 0 ? '+' : ''}${parseFloat(quote['09. change']).toFixed(2)} 
-                                (${parseFloat(quote['09. change']) >= 0 ? '+' : ''}${parseFloat(quote['10. change percent'].replace('%','')).toFixed(2)}%)
-                            </span>
-                        </div>
-                        <h3>Company Details</h3>
-                        <div class="info-grid">
-                            <div class="info-item"><strong>Sector:</strong> ${overview.Sector}</div>
-                            <div class="info-item"><strong>Industry:</strong> ${overview.Industry}</div>
-                            <div class="info-item"><strong>Market Cap:</strong> $${parseInt(overview.MarketCapitalization).toLocaleString()}</div>
-                        </div>
-                    </div>`;
-                stockContainer.innerHTML = stockHTML;
-                fetchStockNews(symbol);
-            }).catch(error => {
-                console.error('Stock data fetch failed:', error);
-                stockContainer.innerHTML = `<div class="card"><h2>Stock Overview</h2><p style="color: red;">Could not load stock data: ${error.message}</p></div>`;
-            });
-    }
+    const stockContainer = document.getElementById('stockInfoContainer');
+    stockContainer.innerHTML = '<div class="card"><h2>Stock Overview</h2><p>Loading...</p></div>';
+    
+    fetch(`/.netlify/functions/getStockInfo?symbol=${symbol}`)
+        .then(response => {
+            if (!response.ok) { throw new Error(`Network response was not ok (${response.status})`); }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error || !data.overview || !data.quote || Object.keys(data.overview).length === 0) {
+                throw new Error(data.error || `No data found for symbol: ${symbol}`);
+            }
+            const overview = data.overview;
+            const quote = data.quote;
+
+            // --- Format all the data points for display ---
+            const marketCap = overview.MarketCapitalization === 'None' ? 'N/A' : `$${parseInt(overview.MarketCapitalization).toLocaleString()}`;
+            const peRatio = overview.PERatio === 'None' ? 'N/A' : overview.PERatio;
+            const dividendYield = overview.DividendYield === 'None' ? 'N/A' : `${(parseFloat(overview.DividendYield) * 100).toFixed(2)}%`;
+            const high52 = overview['52WeekHigh'] === 'None' ? 'N/A' : `$${overview['52WeekHigh']}`;
+            const low52 = overview['52WeekLow'] === 'None' ? 'N/A' : `$${overview['52WeekLow']}`;
+
+            const currentPrice = parseFloat(quote['05. price']).toFixed(2);
+            const change = parseFloat(quote['09. change']);
+            const changePercent = parseFloat(quote['10. change percent'].replace('%','')).toFixed(2);
+            const isPositive = change >= 0;
+            const changeClass = isPositive ? 'positive' : 'negative';
+            const changeSign = isPositive ? '+' : '';
+
+            // --- New, more detailed HTML structure ---
+            const stockHTML = `
+                <div class="card">
+                    <h2>${overview.Name} (${overview.Symbol})</h2>
+                    <div class="price-quote">
+                        <span class="price">$${currentPrice}</span>
+                        <span class="change ${changeClass}">${changeSign}${change.toFixed(2)} (${changeSign}${changePercent}%)</span>
+                    </div>
+
+                    <h3>Company Details</h3>
+                    <div class="info-grid">
+                        <div class="info-item"><strong>Sector:</strong> ${overview.Sector}</div>
+                        <div class="info-item"><strong>Industry:</strong> ${overview.Industry}</div>
+                        <div class="info-item"><strong>Country:</strong> ${overview.Country}</div>
+                        <div class="info-item"><strong>Exchange:</strong> ${overview.Exchange}</div>
+                    </div>
+                    <div class="info-item" style="margin-top: 1rem;">
+                        <strong>Address:</strong> ${overview.Address}
+                    </div>
+
+                    <h3 style="margin-top: 1.5rem;">Key Metrics</h3>
+                    <div class="info-grid">
+                        <div class="info-item"><strong>Market Cap:</strong> ${marketCap}</div>
+                        <div class="info-item"><strong>P/E Ratio:</strong> ${peRatio}</div>
+                        <div class="info-item"><strong>52-Week High:</strong> ${high52}</div>
+                        <div class="info-item"><strong>52-Week Low:</strong> ${low52}</div>
+                        <div class="info-item"><strong>Dividend Yield:</strong> ${dividendYield}</div>
+                    </div>
+
+                    <h3 style="margin-top: 1.5rem;">Description</h3>
+                    <p>${overview.Description}</p>
+                </div>`;
+                
+            stockContainer.innerHTML = stockHTML;
+            fetchStockNews(symbol); // This still fetches related news
+            
+        }).catch(error => {
+            console.error('Stock data fetch failed:', error);
+            stockContainer.innerHTML = `<div class="card"><h2>Stock Overview</h2><p style="color: red;">Could not load stock data: ${error.message}</p></div>`;
+        });
+}
 
     function fetchStockNews(symbol) {
         const stockContainer = document.getElementById('stockInfoContainer');
