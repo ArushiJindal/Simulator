@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial Dashboard</title>
     <link rel="stylesheet" href="style.css">
-</head>
-</head>
+    </head>
 <body>
     <div class="container">
         <header class="main-header">
@@ -19,7 +17,6 @@
 
         <main>
             <div class="dashboard-grid">
-
                 <div class="card search-area">
                     <h1>Stock Search</h1>
                     <div class="search-container">
@@ -35,7 +32,7 @@
                     
                     <div class="card">
                         <h2>GlobeNewswire</h2>
-                        <div id="gnw_widget_root"></div>
+                        <div id="gnw-newsroom-widget-container"></div>
                     </div>
 
                     <div class="card">
@@ -45,14 +42,11 @@
                     </div>
                 </div>
 
-            </div>
-         </main>
+            </div> </main>
     </div>
+    
     <script src="script.js"></script>
-    <script src='https://www.globenewswire.com/Scripts/gnw_widget.js' type='text/javascript'></script>
-    <script type='text/javascript'>
-      var userActivityUrl ='https://www.globenewswire.com/SocialMediaActivity/Log?activity=jsWidgetRefreshed&context=0';
-      GetWidget('http://www.globenewswire.com/JSonFeed/orgclass/1/feedTitle/GlobeNewswire - News about Public Companies?callback=?', 'Press Releases');
-    </script>
+
+    <script src='https://www.globenewswire.com/public-shared/gnw-newsroom-widget.js?key=8227d286-82a9-4031-88d2-beb9baf875c4&rows=50&pageSize=50&dateTimeFormat=YYYY-MM-DD HH:mm:ss' type='text/javascript'></script>
 </body>
 </html>
