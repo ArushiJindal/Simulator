@@ -141,3 +141,31 @@ function fetchGlobeNewswire() {
         });
 }
 });
+
+
+/**
+ * Fixes the width of the GlobeNewswire widget after it loads.
+ * The widget's own script applies a fixed width, so we override it here.
+ */
+function fixGlobeNewswireWidth() {
+    // Find the main container created by the widget
+    const widgetContainer = document.getElementById('gnw_widget');
+
+    if (widgetContainer) {
+        // Find the inner element that the widget's CSS targets
+        const innerContent = widgetContainer.querySelector('.gnw_content_container');
+
+        // Force both the container and its inner content to be 100% width
+        if (innerContent) {
+            innerContent.style.width = '100%';
+        }
+        widgetContainer.style.width = '100%';
+    }
+}
+
+// The widget can be slow to load. We'll run our fix after a short delay
+// to make sure the widget has already rendered its content.
+document.addEventListener('DOMContentLoaded', () => {
+    // Run the fix after 1.5 seconds, giving the widget time to load.
+    setTimeout(fixGlobeNewswireWidth, 1500);
+});
