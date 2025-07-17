@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.key === "Enter") handleSymbolSearch();
     });
 
-    fetchGlobeNewswire();
 
     function handleSymbolSearch() {
         const symbol = searchInput.value.toUpperCase().trim();
@@ -111,96 +110,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }).catch(error => console.error('Error fetching stock-specific news:', error));
     }
 
-function fetchGlobeNewswire() {
-    const container = document.getElementById('globeNewsContainer');
-    if (!container) return; 
-    
-    fetch('/.netlify/functions/getGlobeNewswireRss')
-        .then(response => response.json())
-        .then(articles => {
-            if (!Array.isArray(articles) || articles.length === 0) {
-                container.innerHTML = '<p>News is currently unavailable.</p>';
-                return;
-            }
-            
-            container.innerHTML = ''; // Clear the "Loading..." message
-            
-            articles.slice(0, 10).forEach(article => {
-                const articleEl = document.createElement('div');
-                articleEl.className = 'minimal-news-item';
-                
-                // --- FIX #1: More robust way to find the stock symbol ---
-                let symbols = (article.categories || [])
-                    .filter(cat => /^[A-Z]{1,5}$/.test(cat))
-                    .join(', ');
 
-                // If no symbol was in categories, check the title for (EXCHANGE:TICKER)
-                if (!symbols) {
-                    const match = article.title.match(/\((?:NASDAQ|NYSE|TSX|OTCQX|OTC|OTCQB):([A-Z\.]{1,5})\)/);
-                    if (match && match[1]) {
-                        symbols = match[1];
-                    }
-                }
-
-                // --- FIX #2: Safely parse and format the date ---
-                let formattedDate = '';
-                const dateSource = article.isoDate || article.pubDate; // Use isoDate or fallback to pubDate
-                if (dateSource) {
-                    const dateObj = new Date(dateSource);
-                    // Check if the created date is valid before trying to format it
-                    if (!isNaN(dateObj.getTime())) {
-                        formattedDate = dateObj.toLocaleString('en-US', {
-                            timeZone: 'America/New_York', // Eastern Time
-                            month: 'short',
-                            day: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true,
-                        });
-                    }
-                }
-                
-                articleEl.innerHTML = `
-                    <div class="minimal-news-content">
-                        <a href="${article.link}" target="_blank" rel="noopener noreferrer">${article.title}</a>
-                        ${formattedDate ? `<span class="news-timestamp">${formattedDate} ET</span>` : ''}
-                    </div>
-                    ${symbols ? `<span class="news-symbols">${symbols}</span>` : ''}
-                `;
-                container.appendChild(articleEl);
-            });
-        })
-        .catch(error => {
-            console.error('Error fetching GlobeNewswire feed:', error);
-            container.innerHTML = '<p>Could not load news feed.</p>';
-        });
-}
 });
 
-
-/**
- * Fixes the width of the GlobeNewswire widget after it loads.
- * The widget's own script applies a fixed width, so we override it here.
- */
-function fixGlobeNewswireWidth() {
-    // Find the main container created by the widget
-    const widgetContainer = document.getElementById('gnw_widget');
-
-    if (widgetContainer) {
-        // Find the inner element that the widget's CSS targets
-        const innerContent = widgetContainer.querySelector('.gnw_content_container');
-
-        // Force both the container and its inner content to be 100% width
-        if (innerContent) {
-            innerContent.style.width = '100%';
-        }
-        widgetContainer.style.width = '100%';
-    }
-}
-
-// The widget can be slow to load. We'll run our fix after a short delay
-// to make sure the widget has already rendered its content.
-document.addEventListener('DOMContentLoaded', () => {
-    // Run the fix after 1.5 seconds, giving the widget time to load.
-    setTimeout(fixGlobeNewswireWidth, 1500);
-});
