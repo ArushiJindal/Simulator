@@ -129,6 +129,14 @@ button:hover { background-color: #0056b3; transform: translateY(-2px); }
     border-bottom: 1px solid #e2e8f0;
     margin-bottom: 1rem;
 }
+
+.news-grid {
+    grid-column: 1 / -1; /* This makes it span the full width of the main grid */
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Two equal columns */
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
 /* --- YouTube Page --- */
 .channel-selector { display: flex; flex-wrap: wrap; gap: 1rem; }
 .channel-btn { margin-bottom: 0.5rem; }
