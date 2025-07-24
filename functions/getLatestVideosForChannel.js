@@ -15,7 +15,7 @@ export const handler = async (event) => {
     const channelData = [];
 
     const playlistId = channelId.replace(/^UC/, 'UU');
-    const API_URL = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=2&key=${API_KEY}`;
+    const API_URL = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=5&key=${API_KEY}`;
     
     try {
         const response = await fetch(API_URL);
