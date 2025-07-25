@@ -78,7 +78,9 @@ function handleChannelSelection(clickedButton) {
                 videosHTML += '<p>No standard videos found for this channel.</p>';
             } else {
                 data.forEach(item => {
-                    const videoUrl = `https://api.supadata.ai/v1/youtube/transcript?url=https://www.youtube.com/watch?v={item.videoId}`;
+                    // FIX: Use the correct, standard YouTube watch URL
+                    const videoUrl = `https://www.youtube.com/watch?v=${item.videoId}`;
+                    
                     const formattedDate = new Date(item.publishedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                     
                     let controlsHTML = '';
@@ -89,9 +91,10 @@ function handleChannelSelection(clickedButton) {
                         controlsHTML = '<p style="color: #28a745; font-weight: bold;">Analysis Complete</p>';
                         summaryHTML = item.summary;
                         summaryStyle = 'display: block;';
+                    } else if (item.hasTranscript) {
+                        controlsHTML = `<button class="summarize-btn" data-video-id="${item.videoId}" data-action="getSummary">Generate Summary</button>`;
                     } else {
-                        // This ensures the correct button is created with the right action
-                        controlsHTML = `<button class="summarize-btn" data-video-id="${item.videoId}" data-action="startAnalysis">Analyze & Summarize</button>`;
+                        controlsHTML = `<button class="summarize-btn" data-video-id="${item.videoId}" data-action="getTranscript">Get Transcript</button>`;
                     }
 
                     videosHTML += `
@@ -99,7 +102,10 @@ function handleChannelSelection(clickedButton) {
                             <a href="${videoUrl}" target="_blank" rel="noopener noreferrer"><img src="${item.thumbnail}" alt="Video thumbnail"></a>
                             <div>
                                 <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">${item.title}</a>
-                                <div class="video-meta"><span>from ${item.channelName}</span><span>${formattedDate}</span></div>
+                                <div class="video-meta">
+                                    <span>from ${item.channelName}</span>
+                                    <span>${formattedDate}</span>
+                                </div>
                                 <div class="summary-controls">${controlsHTML}</div>
                                 <div class="summary-content" style="${summaryStyle}">${summaryHTML}</div>
                             </div>
