@@ -91,8 +91,6 @@ function handleChannelSelection(clickedButton) {
                         controlsHTML = '<p style="color: #28a745; font-weight: bold;">Analysis Complete</p>';
                         summaryHTML = item.summary;
                         summaryStyle = 'display: block;';
-                    } else if (item.hasTranscript) {
-                        controlsHTML = `<button class="summarize-btn" data-video-id="${item.videoId}" data-action="getSummary">Generate Summary</button>`;
                     } else {
                         controlsHTML = `<button class="summarize-btn" data-video-id="${item.videoId}" data-action="startAnalysis">Analyze & Summarize</button>`;
                     }
