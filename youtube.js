@@ -94,7 +94,7 @@ function handleChannelSelection(clickedButton) {
                     } else if (item.hasTranscript) {
                         controlsHTML = `<button class="summarize-btn" data-video-id="${item.videoId}" data-action="getSummary">Generate Summary</button>`;
                     } else {
-                        controlsHTML = `<button class="summarize-btn" data-video-id="${item.videoId}" data-action="getTranscript">Get Transcript</button>`;
+                        controlsHTML = `<button class="summarize-btn" data-video-id="${item.videoId}" data-action="startAnalysis">Analyze & Summarize</button>`;
                     }
 
                     videosHTML += `
