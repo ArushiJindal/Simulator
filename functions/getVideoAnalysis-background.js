@@ -116,6 +116,11 @@ export const handler = async (event) => {
         const aiResult = await model.generateContent(promptToUse);
         const newSummary = aiResult.response.text();
 
+        if (newSummary.length === 0) {
+            console.warn(`No significant financial information found in video ${videoId}.`);
+            return { statusCode: 204 }; // No Content
+        }
+
         // 5. Save the final summary to the database.
         await pool.query('INSERT INTO summaries (videoId, content) VALUES ($1, $2) ON CONFLICT (videoId) DO UPDATE SET content = EXCLUDED.content', [videoId, newSummary]);
         console.log(`Successfully generated and cached summary for ${videoId}`);
