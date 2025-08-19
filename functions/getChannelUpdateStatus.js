@@ -6,7 +6,8 @@ export const handler = async () => {
         { name: 'Lets Talk Money', id: 'UCbKdotYtcY9SxoU8CYAXdvg' },
         { name: 'Joseph Carlson After Hours', id: 'UCfCT7SSFEWyG4th9ZmaGYqQ' },
         { name: 'Joseph Carlson', id: 'UCbta0n8i6Rljh0obO7HzG9A' },
-        { name: 'Ross Cameron', id: 'UCBayuhgYpKNbhJxfExYkPfA' },       
+        { name: 'Ross Cameron', id: 'UCBayuhgYpKNbhJxfExYkPfA' },    
+        { name: 'Meet Kevin', id: 'UCUvvj5lwue7PspotMDjk5UA' },    
         { name: 'Travelling Trader', id: 'UCWt3Cx6RrHX86_yF4I7f1LA' }
 
         
