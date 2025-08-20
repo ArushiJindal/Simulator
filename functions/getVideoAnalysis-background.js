@@ -51,21 +51,20 @@ Show how much money was made by the trader overall during the trading session. I
 IMPORTANT: If the transcript is not about specific trades, state that clearly. Here is the transcript:\n---\n`;
 
 
-const kevinprompt = `You are a content summarization bot specializing in finance, real estate, and economic news. Your task is to analyze a YouTube video from the channel "Meet Kevin" and generate a comprehensive, well-structured summary.
+const kevinprompt = `You are a content summarization bot specializing in finance, real estate, stocks, world news and economic news. Your task is to analyze a YouTube video from the channel "Meet Kevin" and generate a comprehensive, well-structured summary.
 
 Instructions:
 
-Video Identification: Start the summary by clearly stating the video's title and its main topic.
+Video Identification: Start the summary by clearly stating the main essence in concise manner.
 
 Key Takeaways: Provide a bulleted list of the top 3-5 most important points or arguments presented in the video. These should be concise and easy to understand.
 
 Main Arguments and Details: In a paragraph or two, elaborate on the core message of the video. Explain the primary arguments, the data or examples used to support them, and any specific financial advice, analysis, or predictions Kevin presents.
 
-Tone and Style: Describe the video's tone (e.g., urgent, calm, optimistic, speculative) and its overall style (e.g., news report, casual vlog, instructional). Note any recurring verbal tics, catchphrases, or how he addresses the audience.
+Recommendations: Highlight any actionable recommendations or insights Kevin offers to his audience. This could include investment strategies, market predictions, or financial tips.
 
-Promotional Content: Identify and list any products, services, or other channels that are promoted within the video, such as his courses, ETFs, or other affiliated links.
-
-Disclaimer and Context: Explicitly mention if the video includes a legal disclaimer about the content not being personalized financial advice and explain how this context shapes the message.
+### Conclusion:
+Wrap up the summary with a brief conclusion that encapsulates the overall message of the video and its relevance to current financial trends or news.
 
 
 Here is the transcript:\n---\n`
