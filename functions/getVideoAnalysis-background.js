@@ -27,6 +27,9 @@ Summarize the main investment strategies or financial arguments presented in the
 ### Economic & Market Outlook
 Describe any discussion of macroeconomic trends, market sentiment, or economic indicators (e.g., inflation, interest rates).
 
+### Remaining Analysis
+Anything which you could have missed and did not fit in the headlines above. You can create your own apt headline here and give me some summary.
+
 ---
 
 IMPORTANT: If the transcript contains no relevant financial information, simply respond with the single sentence: "No significant financial information was found in this video." Do not invent or infer information.
@@ -46,6 +49,10 @@ Describe any discussion of macroeconomic trends, market sentiment, or economic i
 
 ### Total Money Made
 Show how much money was made by the trader overall during the trading session. If you have breakdown per trade that would also be good additional information, Also signify any trades which were red (negative).
+
+## Remaining Analysis
+Anything which you could have missed and did not fit in the headlines above. You can create your own apt headline here and give me some summary.
+It may not be related to momentum trading as such.
 ---
 
 IMPORTANT: If the transcript is not about specific trades, state that clearly. Here is the transcript:\n---\n`;
