@@ -138,8 +138,48 @@ button:hover { background-color: #0056b3; transform: translateY(-2px); }
     margin-top: 1.5rem;
 }
 /* --- YouTube Page --- */
-.channel-selector { display: flex; flex-wrap: wrap; gap: 1rem; }
-.channel-btn { margin-bottom: 0.5rem; }
+.channel-selector {
+    /* Enables the grid layout */
+    display: grid;
+    /* Defines the columns: 'repeat(auto-fit, minmax(200px, 1fr))' 
+       creates columns that are at least 200px wide, 
+       and as many as can fit on the row. */
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    /* Adds space between the grid items (channels) */
+    gap: 1.5rem; 
+    padding: 1.5rem; /* Optional: adds a bit of inner padding */
+    /* Optional: for better visibility */
+    background-color: #f9f9f9; 
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Very light overall shadow */
+}
+
+/* Target the individual channel element */
+.channel-btn { 
+    /* Centers the content (e.g., channel icon and name) */
+    text-align: center; 
+    height: 100%; 
+    min-height: 80px;
+    /* 2. Ensures padding and border are included *inside* the 100% height. */
+    box-sizing: border-box;
+   /* Remove the harsh border, replace with a subtle shadow */
+    border: none; 
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05); /* Subtle default shadow */
+    
+    border-radius: 8px; /* Slightly rounded corners */
+    padding: 1.5rem; /* Increase internal padding */
+    cursor: pointer;
+    /* Smooth transition for hover effects */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Add a hover effect for a professional touch */
+.channel-btn:hover {
+    transform: translateY(-5px); 
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.08); 
+}
+
+
 .video-item { display: grid; grid-template-columns: 120px 1fr; gap: 1rem; align-items: flex-start; padding: 1rem 0; border-top: 1px solid #e9ecef; }
 .video-item:first-child { border-top: none; }
 .video-item img { width: 120px; border-radius: 8px; }

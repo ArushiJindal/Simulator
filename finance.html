@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Feed</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="main-header">
+            <h1>Financial Dashboard</h1>
+            <nav>
+                <a href="index.html">To YouTube Analysis</a>
+            </nav>
+        </header>
+
+        <main>
+            <div class="dashboard-grid">
+                <div class="card search-area">
+                    <h1>Stock Search (Alpha Vantage)</h1>
+                    <div class="search-container">
+                        <input type="text" id="searchInput" placeholder="Enter a stock symbol...">
+                        <button id="searchSymbolBtn">Search Symbol</button>
+                    </div>
+                </div>
+
+                <div id="stockInfoContainer" class="main-content-col">
+                    </div>
+
+                <div class="news-grid">
+                    
+                    <div class="card">
+                        <h2>GlobeNewswire US Stock News</h2>
+                        <div id="gnw-newsroom-widget-container"></div>
+                    </div>
+
+                    <div class="card">
+                        <h2>News Feed</h2>
+                        <p>Open a dedicated page for live news with more controls.</p>
+                        <a href="news.html" class="nav-button">Go to Live News From Alpaca API</a>
+                    </div>
+                </div>
+
+            </div> </main>
+    </div>
+    
+    <script src="finance.js"></script>
+
+    <script src='https://www.globenewswire.com/public-shared/gnw-newsroom-widget.js?key=8227d286-82a9-4031-88d2-beb9baf875c4&rows=50&pageSize=50&dateTimeFormat=YYYY-MM-DD HH:mm:ss' type='text/javascript'></script>
+</body>
+</html>
