@@ -26,10 +26,15 @@ export const handler = async () => {
             const response = await fetch(API_URL);
             const data = await response.json();
 
+            if (data.error) {
+                console.error(`YouTube API error for channel ${channel.name}:`, data.error.message);
+                return { id: channel.id, name: channel.name, hasNewVideo: false, error: true };
+            }
+
             if (data.items && data.items.length > 0) {
                 const latestVideo = data.items[0].snippet;
                 const publishedAt = new Date(latestVideo.publishedAt);
-                
+
                 return {
                   id: channel.id,
                   name: channel.name,
@@ -38,8 +43,9 @@ export const handler = async () => {
             }
         } catch (error) {
             console.error(`Error fetching status for ${channel.name}:`, error);
+            return { id: channel.id, name: channel.name, hasNewVideo: false, error: true };
         }
-        
+
         return { id: channel.id, name: channel.name, hasNewVideo: false };
     });
 

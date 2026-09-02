@@ -22,9 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
     stockContainer.innerHTML = '<div class="card"><h2>Stock Overview</h2><p>Loading...</p></div>';
     
     fetch(`/.netlify/functions/getStockInfo?symbol=${symbol}`)
-        .then(response => {
-            if (!response.ok) { throw new Error(`Network response was not ok (${response.status})`); }
-            return response.json();
+        .then(async response => {
+            const data = await response.json();
+            if (!response.ok) { throw new Error(data.error || `Network response was not ok (${response.status})`); }
+            return data;
         })
         .then(data => {
             if (data.error || !data.overview || !data.quote || Object.keys(data.overview).length === 0) {

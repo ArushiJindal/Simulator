@@ -21,6 +21,11 @@ export const handler = async (event) => {
         const response = await fetch(API_URL);
         const data = await response.json();
 
+        if (data.error) {
+            console.error(`YouTube API error for channel ${channelName}:`, data.error.message);
+            return { statusCode: 502, body: JSON.stringify({ error: `YouTube API error: ${data.error.message}` }) };
+        }
+
         if (data.items && data.items.length > 0) {
             const videoIds = data.items.map(item => item.snippet.resourceId.videoId);
 

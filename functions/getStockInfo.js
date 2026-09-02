@@ -19,8 +19,16 @@ export const handler = async (event) => {
         const overviewData = await overviewResponse.json();
         const quoteData = await quoteResponse.json();
 
-        // Check for API errors or empty results
-        if (overviewData.Note || !overviewData.Symbol || quoteData.Note || !quoteData['Global Quote']) {
+        // Alpha Vantage returns a "Note" (or "Information") field, not an HTTP error,
+        // when the API rate limit is exceeded — distinguish that from a genuinely
+        // unknown symbol so the UI doesn't tell users a valid symbol doesn't exist.
+        const rateLimitMessage = overviewData.Note || overviewData.Information || quoteData.Note || quoteData.Information;
+        if (rateLimitMessage) {
+            console.error('Alpha Vantage rate limit hit:', rateLimitMessage);
+            return { statusCode: 429, body: JSON.stringify({ error: 'Stock data API rate limit reached. Please try again later.' }) };
+        }
+
+        if (!overviewData.Symbol || !quoteData['Global Quote']) {
             return { statusCode: 404, body: JSON.stringify({ error: 'Could not retrieve full data for this symbol.' }) };
         }
 

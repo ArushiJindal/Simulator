@@ -18,6 +18,14 @@ function setupChannelSelector() {
         .then(res => res.json())
         .then(channelsWithStatus => {
             channelSelector.innerHTML = '';
+
+            if (channelsWithStatus.some(channel => channel.error)) {
+                const warning = document.createElement('p');
+                warning.style.color = '#c0392b';
+                warning.textContent = '⚠️ Some channel data could not be loaded (YouTube API error). Video lists may be incomplete.';
+                channelSelector.appendChild(warning);
+            }
+
             channelsWithStatus.forEach(channel => {
                 const button = document.createElement('button');
                 button.className = 'channel-btn';
@@ -83,7 +91,12 @@ function handleChannelSelection(clickedButton) {
             header.textContent = `Latest from ${channelName} (Newest First)`;
             fragment.appendChild(header);
 
-            if (!Array.isArray(data) || data.length === 0) {
+            if (data && data.error) {
+                const errorMsg = document.createElement('p');
+                errorMsg.style.color = '#c0392b';
+                errorMsg.textContent = `⚠️ Could not load videos: ${data.error}`;
+                fragment.appendChild(errorMsg);
+            } else if (!Array.isArray(data) || data.length === 0) {
                 const noVideos = document.createElement('p');
                 noVideos.textContent = 'No standard videos found for this channel.';
                 fragment.appendChild(noVideos);
@@ -97,6 +110,10 @@ function handleChannelSelection(clickedButton) {
             // Single DOM update
             videoResultsContainer.innerHTML = '';
             videoResultsContainer.appendChild(fragment);
+        })
+        .catch(error => {
+            console.error('Could not fetch videos:', error);
+            videoResultsContainer.innerHTML = `<h2>Latest from ${channelName}</h2><p>⚠️ Network error loading videos. Please try again.</p>`;
         });
 }
 
