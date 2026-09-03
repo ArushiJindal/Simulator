@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Insights</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="main-header">
+            <h1>AI Insights Across Summaries</h1>
+            <nav><a href="index.html">Back to YouTube Analysis</a></nav>
+        </header>
+        <main>
+            <div class="card">
+                <h2>Ask a Question Across Your Saved Summaries</h2>
+                <p style="margin-top: -0.5rem; color: #6c757d; font-size: 0.9rem;">Filter which video summaries to search, then ask anything — e.g. "What stocks did Ross Cameron trade this week?" or "Summarize Meet Kevin's real estate predictions in August."</p>
+
+                <form id="insights-form" class="insights-form">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label>Channels</label>
+                            <div id="channel-checkboxes" class="channel-checkboxes">
+                                <p>Loading channels...</p>
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label for="insights-start-date">From date</label>
+                            <input type="date" id="insights-start-date">
+                            <label for="insights-end-date">To date</label>
+                            <input type="date" id="insights-end-date">
+                        </div>
+                    </div>
+
+                    <label for="insights-query">Your question</label>
+                    <textarea id="insights-query" placeholder="What do you want to know across these summaries?" required></textarea>
+
+                    <button type="submit" id="insights-submit">Run Query</button>
+                </form>
+
+                <div id="insights-result" class="adhoc-result" style="display: none;"></div>
+            </div>
+        </main>
+    </div>
+    <script src="insights.js"></script>
+</body>
+</html>

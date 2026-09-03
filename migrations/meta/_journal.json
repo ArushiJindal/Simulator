@@ -8,6 +8,13 @@
       "when": 1788385308737,
       "tag": "0000_gorgeous_red_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788397071705,
+      "tag": "0001_amusing_namor",
+      "breakpoints": true
     }
   ]
 }

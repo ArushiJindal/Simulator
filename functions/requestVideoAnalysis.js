@@ -1,7 +1,7 @@
 
 
 export const handler = async (event) => {
-    const { videoId, channelName } = JSON.parse(event.body);
+    const { videoId, channelName, publishedAt } = JSON.parse(event.body);
 
     if (!videoId || !channelName) {
         return { statusCode: 400, body: JSON.stringify({ message: 'Video ID and Channel Name are required.' }) };
@@ -17,7 +17,7 @@ export const handler = async (event) => {
             // ...with this special header that tells Netlify to run it as a background task
             'x-netlify-background': 'true'
         },
-        body: JSON.stringify({ videoId, channelName })
+        body: JSON.stringify({ videoId, channelName, publishedAt })
     });
 
     // Immediately return the "job started" message

@@ -1,8 +1,6 @@
-// Using modern 'import' syntax
-// import { connectLambda, getStore } from '@netlify/blobs';
 import { Pool } from 'pg';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-// const fetch = (url, init) => import('node-fetch').then(module => module.default(url, init));
+import { fetchTranscript } from './lib/fetchTranscript.js';
 
 // Initialize the AI client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -12,108 +10,106 @@ const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
 });
 
+// Shared rules appended to every channel prompt: adapt to what's actually in
+// the video instead of forcing content into headings that don't apply.
+const adaptiveRules = `
+Read the full transcript first, then write your summary using ONLY the sections that are actually relevant to what this specific video covers. If a section doesn't apply, skip that heading entirely — do not write "not mentioned" and do not force unrelated content into it just to fill it in.
 
-const defaultPrompt  = `
-You are a world-class financial analyst. Your task is to dissect the following YouTube video transcript and extract only the most critical financial information.
+Be specific and data-driven: include numbers, prices, dates, and percentages whenever the transcript states them. Never invent or infer a figure that isn't in the transcript.`;
 
-Provide a concise, data-driven summary formatted with the following markdown headings:
+const defaultPrompt = `
+You are a world-class financial analyst summarizing a YouTube video for a busy investor. Your job is to extract genuinely useful information from the transcript below.
+${adaptiveRules}
 
-### Stock Suggestions
-Provide advise for each stock, company, asset which is mentioned, as to what is being suggested in terms of investment, options and so on
+Possible sections (use markdown ### headings, only for what applies to this video):
 
-### Core Strategies & Theses
-Summarize the main investment strategies or financial arguments presented in the video.
+### Key Takeaways
+2-5 bullet points capturing the single most useful things a viewer should walk away knowing.
 
-### Economic & Market Outlook
-Describe any discussion of macroeconomic trends, market sentiment, or economic indicators (e.g., inflation, interest rates).
+### Stock & Asset Mentions
+For every specific stock, crypto, ETF, or asset discussed: what was said about it, and what (if anything) is being suggested (buy/sell/hold/watch/avoid) and why.
 
-### Remaining Analysis
-Anything which you could have missed and did not fit in the headlines above. You can create your own apt headline here and give me some summary.
+### Investment Strategy & Thesis
+The core argument or strategy being made, and the reasoning or evidence behind it.
 
+### Market & Economic Outlook
+Any discussion of macro trends, Fed policy, inflation, interest rates, or broader market sentiment.
+
+### Other Notable Information
+Anything genuinely useful that doesn't fit above — pick your own heading. Only include this if there's real substance left over.
+
+IMPORTANT: If the transcript contains no meaningful financial content at all, respond with exactly this sentence and nothing else: "No significant financial information was found in this video."
+
+Here is the transcript:
 ---
-
-IMPORTANT: If the transcript contains no relevant financial information, simply respond with the single sentence: "No significant financial information was found in this video." Do not invent or infer information.
-
-Here is the transcript:\n---\n`;
-
+`;
 
 const rossCameronPrompt = `
-You are an expert day trading analyst reviewing a transcript from a veteran day trader Ross Cameron. Your task is to extract specific, actionable trading data.
-Your task is to dissect the following YouTube video transcript and extract only the most critical  information. This youtube video generally shows the daily recap of a trader's trading session.
+You are an expert day-trading analyst reviewing a YouTube video from Ross Cameron, a veteran momentum/day trader. His videos vary — sometimes a recap of a specific trading session, sometimes lessons, market commentary, guest interviews, or Q&A — so identify what this particular video actually is before summarizing it.
+${adaptiveRules}
 
-### Stock Traded
-Provide analysis on which stocks were traded and what mistakes or good actions were taken. Describe what led to profitable trade or a loss trade. And also describe specific trading strategy which was used.
+Possible sections (use markdown ### headings, only for what applies to this video):
 
-### Economic & Market Outlook
-Describe any discussion of macroeconomic trends, market sentiment, or economic indicators (e.g., inflation, interest rates).
+### What This Video Covers
+One or two sentences identifying the type of video (e.g. live trading recap, lesson/tutorial, market commentary, interview) and its main focus.
 
-### Total Money Made
-Show how much money was made by the trader overall during the trading session. If you have breakdown per trade that would also be good additional information, Also signify any trades which were red (negative).
+### Trades & Setups
+If this video includes real trades: which stocks were traded, the setup/pattern used (e.g. gap-and-go, breakout, reversal, VWAP reclaim), what led to a winning or losing trade, and the specific strategy or rule applied. Include entry/exit prices, share size, or P/L figures whenever the transcript states them.
 
-## Remaining Analysis
-Anything which you could have missed and did not fit in the headlines above. You can create your own apt headline here and give me some summary.
-It may not be related to momentum trading as such.
+### Trading Lessons & Rules
+Any explicit trading rules, risk-management principles, or lessons being taught that are meant to generalize beyond today's specific trades.
+
+### Market & Stock Commentary
+Any discussion of specific stocks, sectors, or overall market conditions/sentiment, even outside the context of an active trade.
+
+### Session P/L
+Only if a specific dollar or percentage profit/loss figure for the session is explicitly stated. Give a per-trade breakdown if the transcript provides one, and flag which trades were red (losses). Omit this section entirely if no P/L figure is stated.
+
+### Other Notable Information
+Anything else genuinely useful that doesn't fit above.
+
+IMPORTANT: If this video isn't about trading at all, say so briefly in "What This Video Covers" and skip the rest rather than padding out sections with unrelated content.
+
+Here is the transcript:
 ---
+`;
 
-IMPORTANT: If the transcript is not about specific trades, state that clearly. Here is the transcript:\n---\n`;
+const kevinprompt = `
+You are a financial content analyst summarizing a YouTube video from "Meet Kevin," a channel covering finance, real estate, stocks, world news, and economic policy.
+${adaptiveRules}
 
+Possible sections (use markdown ### headings, only for what applies to this video):
 
-const kevinprompt = `You are a content summarization bot specializing in finance, real estate, stocks, world news and economic news. Your task is to analyze a YouTube video from the channel "Meet Kevin" and generate a comprehensive, well-structured summary.
+### Key Takeaways
+3-5 bullet points capturing the single most important things a viewer should walk away knowing.
 
-Instructions:
+### Main Argument & Analysis
+The core thesis or story of the video, explained in a paragraph or two — what's being claimed, and what data, evidence, or examples support it.
 
-Video Identification: Start the summary by clearly stating the main essence in concise manner.
+### Stock & Market Mentions
+Any specific stocks, sectors, or market predictions discussed, and what's being suggested about them.
 
-Key Takeaways: Provide a bulleted list of the top 3-5 most important points or arguments presented in the video. These should be concise and easy to understand.
+### Real Estate & Economic Policy
+Any discussion of housing, interest rates, Fed policy, taxes, or broader economic/political news relevant to markets or personal finance.
 
-Main Arguments and Details: In a paragraph or two, elaborate on the core message of the video. Explain the primary arguments, the data or examples used to support them, and any specific financial advice, analysis, or predictions Kevin presents.
+### Actionable Recommendations
+Any concrete investment strategies, financial tips, or actions explicitly recommended to viewers.
 
-Recommendations: Highlight any actionable recommendations or insights Kevin offers to his audience. This could include investment strategies, market predictions, or financial tips.
+### Other Notable Information
+Anything genuinely useful left over — pick your own heading. Only include this if there's real substance to add.
 
-### Conclusion:
-Wrap up the summary with a brief conclusion that encapsulates the overall message of the video and its relevance to current financial trends or news.
+IMPORTANT: If the video has no meaningful financial or economic content at all, respond with exactly this sentence and nothing else: "No significant financial information was found in this video."
 
-
-Here is the transcript:\n---\n`
-
-
-// Helper function to get transcript text
-async function fetchTranscript(videoId) {
-    const API_KEY = process.env.SUPADATA_API_KEY;
-    if (!API_KEY) {
-        console.error('SupaData API key is not configured.');
-        return null;
-    }
-    const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
-
-    // The SupaData API endpoint remains the same
-    //const API_URL = `https://api.supadata.ai/v1/youtube/transcript?url=${encodeURIComponent(youtubeUrl)}&text=true`;
-    const API_URL = `https://api.supadata.ai/v1/youtube/transcript?url=${youtubeUrl}&text=true`;
-    
-
-    console.log(API_URL)
-    
-    try {
-        const response = await fetch(API_URL, { headers: { 'x-api-key': API_KEY } });
-        if (!response.ok) {
-            console.error(`SupaData API Error: ${response.status}`);
-            return null;
-        }
-        const data = await response.json();
-        return data.content || null;
-    } catch (error) {
-        console.error('Failed to fetch from SupaData API:', error);
-        return null;
-    }
-}
-
+Here is the transcript:
+---
+`;
 
 export const handler = async (event) => {
-    const { videoId, channelName } = JSON.parse(event.body);
+    const { videoId, channelName, publishedAt } = JSON.parse(event.body);
     if (!videoId) {
         return { statusCode: 400 };
     }
-    
+
     try {
         // 1. Check if the summary already exists. If so, the job is already done.
         const summaryCheck = await pool.query('SELECT 1 FROM summaries WHERE videoId = $1', [videoId]);
@@ -136,10 +132,10 @@ export const handler = async (event) => {
 
         // 4. Now that we have a transcript, generate the summary.
         let promptToUse = defaultPrompt;
-        
+
         if (channelName === 'Meet Kevin') promptToUse = kevinprompt;
         else if (channelName === 'Ross Cameron') promptToUse = rossCameronPrompt;
-        
+
         promptToUse += transcriptText;
 
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
@@ -151,10 +147,15 @@ export const handler = async (event) => {
             return { statusCode: 204 }; // No Content
         }
 
-        // 5. Save the final summary to the database.
-        await pool.query('INSERT INTO summaries (videoId, content) VALUES ($1, $2) ON CONFLICT (videoId) DO UPDATE SET content = EXCLUDED.content', [videoId, newSummary]);
+        // 5. Save the final summary, along with channel/date metadata used for filtering on the insights page.
+        await pool.query(
+            `INSERT INTO summaries (videoId, content, channelname, publishedat)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (videoId) DO UPDATE SET content = EXCLUDED.content, channelname = EXCLUDED.channelname, publishedat = EXCLUDED.publishedat`,
+            [videoId, newSummary, channelName || null, publishedAt || null]
+        );
         console.log(`Successfully generated and cached summary for ${videoId}`);
-        
+
         return { statusCode: 200 };
 
     } catch (error) {
@@ -162,6 +163,3 @@ export const handler = async (event) => {
         return { statusCode: 500 };
     }
 };
-
-
-

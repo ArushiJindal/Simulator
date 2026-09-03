@@ -11,10 +11,21 @@
     <div class="container">
         <header class="main-header">
             <h1>YouTube Analysis</h1>
-            <nav><a href="finance.html">To Financial Dashboard</a></nav>
+            <nav><a href="insights.html">AI Insights Across Summaries</a></nav>
         </header>
         <main>
             <div class="card">
+                <h2>Ad-hoc Video Analysis</h2>
+                <p style="margin-top: -0.5rem; color: #6c757d; font-size: 0.9rem;">Paste any YouTube URL and ask your own question — not limited to the tracked channels below.</p>
+                <form id="adhoc-form" class="adhoc-form">
+                    <input type="text" id="adhoc-url" placeholder="YouTube URL (e.g. https://www.youtube.com/watch?v=...)" required>
+                    <textarea id="adhoc-prompt" placeholder="What do you want to know? (e.g. Summarize the key stock picks and price targets mentioned.)" required></textarea>
+                    <button type="submit" id="adhoc-submit">Analyze Video</button>
+                </form>
+                <div id="adhoc-result" class="adhoc-result" style="display: none;"></div>
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
                 <h2>Select a Channel</h2>
                 <div id="channel-selector" class="channel-selector"></div>
             </div>

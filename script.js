@@ -2,7 +2,10 @@
 const activeRequests = new Set();
 
 // This event listener runs once when the page is ready.
-document.addEventListener('DOMContentLoaded', setupChannelSelector);
+document.addEventListener('DOMContentLoaded', () => {
+    setupChannelSelector();
+    setupAdhocForm();
+});
 
 // This single event listener handles all button clicks on the page.
 document.addEventListener('click', handleButtonClick);
@@ -52,10 +55,11 @@ function handleButtonClick(event) {
         handleChannelSelection(button);
     } else if (button.dataset.action === 'startAnalysis') {
         const videoId = button.dataset.videoId;
+        const publishedAt = button.dataset.publishedAt;
         const channelName = button.closest('.video-item').dataset.channelName;
         const summaryContainer = button.closest('.video-item').querySelector('.summary-content');
 
-        handleStartAnalysis(videoId, channelName, summaryContainer, button);
+        handleStartAnalysis(videoId, channelName, publishedAt, summaryContainer, button);
     }
 }
 
@@ -185,6 +189,7 @@ function createVideoItem(item) {
         const button = document.createElement('button');
         button.className = 'summarize-btn';
         button.dataset.videoId = item.videoId;
+        button.dataset.publishedAt = item.publishedAt;
         button.dataset.action = 'startAnalysis';
         button.textContent = 'Analyze & Summarize';
         controlsDiv.appendChild(button);
@@ -208,7 +213,7 @@ function createVideoItem(item) {
 /**
  * Starts the background analysis job and begins polling for results.
  */
-function handleStartAnalysis(videoId, channelName, container, button) {
+function handleStartAnalysis(videoId, channelName, publishedAt, container, button) {
     // Prevent duplicate requests for the same video
     if (activeRequests.has(videoId)) {
         console.log('Analysis already in progress for', videoId);
@@ -224,7 +229,7 @@ function handleStartAnalysis(videoId, channelName, container, button) {
     fetch('/.netlify/functions/requestVideoAnalysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ videoId, channelName })
+        body: JSON.stringify({ videoId, channelName, publishedAt })
     })
     .then(response => {
         if (response.status === 202) {
@@ -295,4 +300,94 @@ function pollForResult(videoId, container, button) {
         clearInterval(intervalId);
         activeRequests.delete(videoId);
     }, { once: true });
+}
+
+/**
+ * Wires up the ad-hoc "paste a URL + your own prompt" analysis form.
+ */
+function setupAdhocForm() {
+    const form = document.getElementById('adhoc-form');
+    if (!form) return;
+
+    const urlInput = document.getElementById('adhoc-url');
+    const promptInput = document.getElementById('adhoc-prompt');
+    const submitBtn = document.getElementById('adhoc-submit');
+    const resultDiv = document.getElementById('adhoc-result');
+
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        const youtubeUrl = urlInput.value.trim();
+        const prompt = promptInput.value.trim();
+        if (!youtubeUrl || !prompt) return;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Requesting...';
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<p>Starting analysis...</p>';
+
+        fetch('/.netlify/functions/requestAdhocAnalysis', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ youtubeUrl, prompt })
+        })
+        .then(async response => {
+            const data = await response.json();
+            if (response.status !== 202) throw new Error(data.error || 'Could not start the analysis job.');
+            return data;
+        })
+        .then(data => {
+            submitBtn.textContent = 'Analyzing...';
+            resultDiv.innerHTML = '<p>✅ Analysis started. This can take up to a minute for a longer video...</p>';
+            pollAdhocResult(data.id, resultDiv, submitBtn);
+        })
+        .catch(error => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Analyze Video';
+            resultDiv.innerHTML = `<p>❌ ${error.message}</p>`;
+        });
+    });
+}
+
+/**
+ * Polls the ad-hoc analysis status every 10 seconds until it's complete.
+ */
+function pollAdhocResult(id, resultDiv, submitBtn) {
+    let pollCount = 0;
+    const maxPolls = 30; // 5 minutes max (30 * 10s)
+
+    const intervalId = setInterval(() => {
+        pollCount++;
+
+        if (pollCount > maxPolls) {
+            clearInterval(intervalId);
+            resultDiv.innerHTML = '<p>⏱️ Analysis timed out. Please try again.</p>';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Analyze Video';
+            return;
+        }
+
+        fetch(`/.netlify/functions/getAdhocAnalysisStatus?id=${id}`)
+            .then(res => {
+                if (!res.ok) throw new Error('Network error');
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'complete' || data.status === 'error') {
+                    clearInterval(intervalId);
+                    resultDiv.textContent = data.result;
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Analyze Video';
+                }
+            })
+            .catch(error => {
+                console.error('Ad-hoc polling error:', error);
+                clearInterval(intervalId);
+                resultDiv.innerHTML = '<p>❌ Error checking status. Please refresh.</p>';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Analyze Video';
+            });
+    }, 10000);
+
+    window.addEventListener('beforeunload', () => clearInterval(intervalId), { once: true });
 }
