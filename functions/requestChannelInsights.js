@@ -1,11 +1,15 @@
 import { Pool } from 'pg';
 import { randomUUID } from 'crypto';
+import { checkAuth } from './lib/requireAuth.js';
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
 });
 
 export const handler = async (event) => {
+    const authError = checkAuth(event);
+    if (authError) return authError;
+
     const { query, channels, startDate, endDate } = JSON.parse(event.body || '{}');
 
     if (!query || !query.trim()) {
@@ -24,7 +28,7 @@ export const handler = async (event) => {
     const functionUrl = `${process.env.URL}/.netlify/functions/runChannelInsights-background`;
     await fetch(functionUrl, {
         method: 'POST',
-        headers: { 'x-netlify-background': 'true' },
+        headers: { 'x-netlify-background': 'true', 'x-access-key': process.env.SITE_ACCESS_KEY },
         body: JSON.stringify({ queryId })
     });
 

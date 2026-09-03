@@ -1,6 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
-    loadChannelCheckboxes();
-    setupInsightsForm();
+    window.onAuthReady(() => {
+        loadChannelCheckboxes();
+        setupInsightsForm();
+        loadRecentInsightQueries();
+    });
 });
 
 /**
@@ -10,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function loadChannelCheckboxes() {
     const container = document.getElementById('channel-checkboxes');
 
-    fetch('/.netlify/functions/getChannelUpdateStatus')
+    apiFetch('/.netlify/functions/getChannelUpdateStatus')
         .then(res => res.json())
         .then(channels => {
             container.innerHTML = '';
@@ -83,7 +86,7 @@ function setupInsightsForm() {
         resultDiv.style.display = 'block';
         resultDiv.innerHTML = '<p>Gathering matching summaries and running the query...</p>';
 
-        fetch('/.netlify/functions/requestChannelInsights', {
+        apiFetch('/.netlify/functions/requestChannelInsights', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query, channels, startDate, endDate })
@@ -117,7 +120,7 @@ function pollInsightsResult(queryId, resultDiv, submitBtn) {
             return;
         }
 
-        fetch(`/.netlify/functions/getChannelInsightsStatus?queryId=${queryId}`)
+        apiFetch(`/.netlify/functions/getChannelInsightsStatus?queryId=${queryId}`)
             .then(res => {
                 if (!res.ok) throw new Error('Network error');
                 return res.json();
@@ -131,6 +134,7 @@ function pollInsightsResult(queryId, resultDiv, submitBtn) {
                     resultDiv.innerHTML = countNote + `<div>${escapeAndFormat(data.answer)}</div>`;
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Run Query';
+                    loadRecentInsightQueries();
                 }
             })
             .catch(error => {
@@ -149,4 +153,65 @@ function escapeAndFormat(text) {
     const div = document.createElement('div');
     div.textContent = text || '';
     return div.innerHTML.replace(/\n/g, '<br>');
+}
+
+/**
+ * Loads and renders the most recent insight queries from the database.
+ */
+function loadRecentInsightQueries() {
+    const section = document.getElementById('recent-insights');
+    const itemsContainer = document.getElementById('recent-insights-items');
+    if (!section || !itemsContainer) return;
+
+    apiFetch('/.netlify/functions/getRecentInsightQueries')
+        .then(res => res.json())
+        .then(rows => {
+            if (!Array.isArray(rows) || rows.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            itemsContainer.innerHTML = '';
+            rows.forEach(row => {
+                const item = document.createElement('div');
+                item.className = 'recent-item';
+
+                const meta = document.createElement('div');
+                meta.className = 'recent-item-meta';
+                const channelsLabel = row.channels === 'ALL' ? 'All Channels' : row.channels;
+                meta.textContent = `${channelsLabel} · ${new Date(row.createdat).toLocaleString()} · ${row.status}`;
+
+                const prompt = document.createElement('div');
+                prompt.className = 'recent-item-prompt';
+                prompt.textContent = row.querytext;
+
+                item.appendChild(meta);
+                item.appendChild(prompt);
+
+                if (row.status === 'complete' || row.status === 'error') {
+                    const toggle = document.createElement('button');
+                    toggle.type = 'button';
+                    toggle.className = 'recent-item-toggle';
+                    toggle.textContent = 'Show answer';
+
+                    const answer = document.createElement('div');
+                    answer.className = 'recent-item-answer';
+                    answer.style.display = 'none';
+                    answer.textContent = row.answer;
+
+                    toggle.addEventListener('click', () => {
+                        const showing = answer.style.display === 'block';
+                        answer.style.display = showing ? 'none' : 'block';
+                        toggle.textContent = showing ? 'Show answer' : 'Hide answer';
+                    });
+
+                    item.appendChild(toggle);
+                    item.appendChild(answer);
+                }
+
+                itemsContainer.appendChild(item);
+            });
+        })
+        .catch(error => console.error('Could not load recent insight queries:', error));
 }

@@ -3,8 +3,12 @@ const activeRequests = new Set();
 
 // This event listener runs once when the page is ready.
 document.addEventListener('DOMContentLoaded', () => {
-    setupChannelSelector();
-    setupAdhocForm();
+    window.onAuthReady(() => {
+        setupChannelSelector();
+        setupAdhocForm();
+        checkSystemHealth();
+        loadRecentAdhocAnalyses();
+    });
 });
 
 // This single event listener handles all button clicks on the page.
@@ -17,7 +21,7 @@ function setupChannelSelector() {
     const channelSelector = document.getElementById('channel-selector');
     channelSelector.innerHTML = '<p>Loading channels...</p>';
 
-    fetch('/.netlify/functions/getChannelUpdateStatus')
+    apiFetch('/.netlify/functions/getChannelUpdateStatus')
         .then(res => res.json())
         .then(channelsWithStatus => {
             channelSelector.innerHTML = '';
@@ -86,7 +90,7 @@ function handleChannelSelection(clickedButton) {
     videoResultsContainer.style.display = 'block';
     videoResultsContainer.innerHTML = `<h2>Latest from ${channelName}</h2><p>Loading videos...</p>`;
 
-    fetch(`/.netlify/functions/getLatestVideosForChannel?channelId=${channelId}&channelName=${encodeURIComponent(channelName)}`)
+    apiFetch(`/.netlify/functions/getLatestVideosForChannel?channelId=${channelId}&channelName=${encodeURIComponent(channelName)}`)
         .then(response => response.json())
         .then(data => {
             // Create a document fragment for better performance
@@ -226,7 +230,7 @@ function handleStartAnalysis(videoId, channelName, publishedAt, container, butto
     container.style.display = 'block';
     container.innerHTML = '';
 
-    fetch('/.netlify/functions/requestVideoAnalysis', {
+    apiFetch('/.netlify/functions/requestVideoAnalysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ videoId, channelName, publishedAt })
@@ -272,7 +276,7 @@ function pollForResult(videoId, container, button) {
             return;
         }
 
-        fetch(`/.netlify/functions/getAnalysisStatus?videoId=${videoId}`)
+        apiFetch(`/.netlify/functions/getAnalysisStatus?videoId=${videoId}`)
             .then(res => {
                 if (!res.ok) throw new Error('Network error');
                 return res.json();
@@ -326,7 +330,7 @@ function setupAdhocForm() {
         resultDiv.style.display = 'block';
         resultDiv.innerHTML = '<p>Starting analysis...</p>';
 
-        fetch('/.netlify/functions/requestAdhocAnalysis', {
+        apiFetch('/.netlify/functions/requestAdhocAnalysis', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ youtubeUrl, prompt })
@@ -367,7 +371,7 @@ function pollAdhocResult(id, resultDiv, submitBtn) {
             return;
         }
 
-        fetch(`/.netlify/functions/getAdhocAnalysisStatus?id=${id}`)
+        apiFetch(`/.netlify/functions/getAdhocAnalysisStatus?id=${id}`)
             .then(res => {
                 if (!res.ok) throw new Error('Network error');
                 return res.json();
@@ -378,6 +382,7 @@ function pollAdhocResult(id, resultDiv, submitBtn) {
                     resultDiv.textContent = data.result;
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Analyze Video';
+                    loadRecentAdhocAnalyses();
                 }
             })
             .catch(error => {
@@ -390,4 +395,88 @@ function pollAdhocResult(id, resultDiv, submitBtn) {
     }, 10000);
 
     window.addEventListener('beforeunload', () => clearInterval(intervalId), { once: true });
+}
+
+/**
+ * Checks whether the YouTube/Gemini/SupaData keys are healthy and shows a
+ * banner if not, so a broken key is caught on page load instead of only
+ * after clicking around and getting confused by silent failures.
+ */
+function checkSystemHealth() {
+    const banner = document.getElementById('health-banner');
+    if (!banner) return;
+
+    apiFetch('/.netlify/functions/getSystemHealth')
+        .then(res => res.json())
+        .then(data => {
+            if (data.ok) return;
+
+            const issues = Object.entries(data.checks)
+                .filter(([, check]) => !check.ok)
+                .map(([name, check]) => `${name}: ${check.message}`);
+
+            banner.style.display = 'block';
+            banner.innerHTML = `<strong>⚠️ System check failed</strong><br>${issues.join('<br>')}`;
+        })
+        .catch(error => console.error('Health check failed:', error));
+}
+
+/**
+ * Loads and renders the most recent ad-hoc analyses from the database.
+ */
+function loadRecentAdhocAnalyses() {
+    const section = document.getElementById('recent-adhoc');
+    const itemsContainer = document.getElementById('recent-adhoc-items');
+    if (!section || !itemsContainer) return;
+
+    apiFetch('/.netlify/functions/getRecentAdhocAnalyses')
+        .then(res => res.json())
+        .then(rows => {
+            if (!Array.isArray(rows) || rows.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            itemsContainer.innerHTML = '';
+            rows.forEach(row => {
+                const item = document.createElement('div');
+                item.className = 'recent-item';
+
+                const meta = document.createElement('div');
+                meta.className = 'recent-item-meta';
+                meta.textContent = `${row.videoid} · ${new Date(row.createdat).toLocaleString()} · ${row.status}`;
+
+                const prompt = document.createElement('div');
+                prompt.className = 'recent-item-prompt';
+                prompt.textContent = row.prompttext;
+
+                item.appendChild(meta);
+                item.appendChild(prompt);
+
+                if (row.status === 'complete' || row.status === 'error') {
+                    const toggle = document.createElement('button');
+                    toggle.type = 'button';
+                    toggle.className = 'recent-item-toggle';
+                    toggle.textContent = 'Show answer';
+
+                    const answer = document.createElement('div');
+                    answer.className = 'recent-item-answer';
+                    answer.style.display = 'none';
+                    answer.textContent = row.result;
+
+                    toggle.addEventListener('click', () => {
+                        const showing = answer.style.display === 'block';
+                        answer.style.display = showing ? 'none' : 'block';
+                        toggle.textContent = showing ? 'Show answer' : 'Hide answer';
+                    });
+
+                    item.appendChild(toggle);
+                    item.appendChild(answer);
+                }
+
+                itemsContainer.appendChild(item);
+            });
+        })
+        .catch(error => console.error('Could not load recent ad-hoc analyses:', error));
 }

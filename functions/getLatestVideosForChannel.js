@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import { checkAuth } from './lib/requireAuth.js';
 
 
 const pool = new Pool({
@@ -6,6 +7,9 @@ const pool = new Pool({
 });
 
 export const handler = async (event) => {
+    const authError = checkAuth(event);
+    if (authError) return authError;
+
     const { channelId, channelName } = event.queryStringParameters;
     if (!channelId || !channelName) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Channel ID and Name are required.'}) };

@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { checkAuth } from './lib/requireAuth.js';
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
@@ -12,6 +13,9 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const MAX_SUMMARIES = 150;
 
 export const handler = async (event) => {
+    const authError = checkAuth(event);
+    if (authError) return authError;
+
     const { queryId } = JSON.parse(event.body);
     if (!queryId) {
         console.error('Channel insights background invoked without a queryId.');

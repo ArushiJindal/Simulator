@@ -1,6 +1,9 @@
+import { checkAuth } from './lib/requireAuth.js';
 
+export const handler = async (event) => {
+    const authError = checkAuth(event);
+    if (authError) return authError;
 
-export const handler = async () => {
     // This list should mirror the one in your youtube.js file
     const channels = [
         { name: 'Lets Talk Money', id: 'UCbKdotYtcY9SxoU8CYAXdvg' },

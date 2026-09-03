@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { fetchTranscript } from './lib/fetchTranscript.js';
+import { checkAuth } from './lib/requireAuth.js';
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
@@ -9,6 +10,9 @@ const pool = new Pool({
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const handler = async (event) => {
+    const authError = checkAuth(event);
+    if (authError) return authError;
+
     const { id, videoId, prompt } = JSON.parse(event.body);
     if (!id || !videoId || !prompt) {
         console.error('Adhoc analysis background invoked with missing fields.');

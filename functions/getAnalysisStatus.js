@@ -1,10 +1,14 @@
 import { Pool } from 'pg';
+import { checkAuth } from './lib/requireAuth.js';
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
 });
 
 export const handler = async (event) => {
+    const authError = checkAuth(event);
+    if (authError) return authError;
+
     const videoId = event.queryStringParameters.videoId;
     try {
         const result = await pool.query('SELECT content FROM summaries WHERE videoId = $1', [videoId]);

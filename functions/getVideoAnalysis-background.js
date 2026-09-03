@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { fetchTranscript } from './lib/fetchTranscript.js';
+import { checkAuth } from './lib/requireAuth.js';
 
 // Initialize the AI client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -105,6 +106,9 @@ Here is the transcript:
 `;
 
 export const handler = async (event) => {
+    const authError = checkAuth(event);
+    if (authError) return authError;
+
     const { videoId, channelName, publishedAt } = JSON.parse(event.body);
     if (!videoId) {
         return { statusCode: 400 };

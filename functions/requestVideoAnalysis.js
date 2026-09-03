@@ -1,6 +1,9 @@
-
+import { checkAuth } from './lib/requireAuth.js';
 
 export const handler = async (event) => {
+    const authError = checkAuth(event);
+    if (authError) return authError;
+
     const { videoId, channelName, publishedAt } = JSON.parse(event.body);
 
     if (!videoId || !channelName) {
@@ -15,7 +18,10 @@ export const handler = async (event) => {
         method: 'POST',
         headers: {
             // ...with this special header that tells Netlify to run it as a background task
-            'x-netlify-background': 'true'
+            'x-netlify-background': 'true',
+            // Background invocations don't go through the browser, so the access
+            // key has to be attached here rather than relying on the caller's header.
+            'x-access-key': process.env.SITE_ACCESS_KEY
         },
         body: JSON.stringify({ videoId, channelName, publishedAt })
     });

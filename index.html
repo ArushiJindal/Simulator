@@ -17,6 +17,8 @@
             <nav><a href="insights.html">AI Insights Across Summaries</a></nav>
         </header>
         <main>
+            <div id="health-banner" class="health-banner" style="display: none;"></div>
+
             <div class="card">
                 <h2>Ad-hoc Video Analysis</h2>
                 <p style="margin-top: -0.5rem; color: #a89bc4; font-size: 0.9rem;">Paste any YouTube URL and ask your own question — not limited to the tracked channels below.</p>
@@ -26,6 +28,11 @@
                     <button type="submit" id="adhoc-submit">Analyze Video</button>
                 </form>
                 <div id="adhoc-result" class="adhoc-result" style="display: none;"></div>
+
+                <div id="recent-adhoc" class="recent-list" style="display: none;">
+                    <h3>Recent Ad-hoc Analyses</h3>
+                    <div id="recent-adhoc-items"></div>
+                </div>
             </div>
 
             <div class="card" style="margin-top: 1.5rem;">
@@ -35,6 +42,7 @@
             <div id="video-results" class="card" style="display: none; margin-top: 1.5rem;"></div>
         </main>
     </div>
+    <script src="auth.js"></script>
     <script src="script.js"></script>
 </body>
 

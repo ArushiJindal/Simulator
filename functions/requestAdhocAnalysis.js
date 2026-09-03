@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { randomUUID } from 'crypto';
+import { checkAuth } from './lib/requireAuth.js';
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL,
@@ -27,6 +28,9 @@ function extractVideoId(input) {
 }
 
 export const handler = async (event) => {
+    const authError = checkAuth(event);
+    if (authError) return authError;
+
     const { youtubeUrl, prompt } = JSON.parse(event.body || '{}');
 
     if (!prompt || !prompt.trim()) {
@@ -48,7 +52,7 @@ export const handler = async (event) => {
     const functionUrl = `${process.env.URL}/.netlify/functions/getAdhocAnalysis-background`;
     await fetch(functionUrl, {
         method: 'POST',
-        headers: { 'x-netlify-background': 'true' },
+        headers: { 'x-netlify-background': 'true', 'x-access-key': process.env.SITE_ACCESS_KEY },
         body: JSON.stringify({ id, videoId, prompt: prompt.trim() })
     });
 

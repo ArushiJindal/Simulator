@@ -35,6 +35,7 @@
                             <input type="date" id="insights-end-date">
                         </div>
                     </div>
+                    <p style="margin: 0 0 0.5rem; color: #a89bc4; font-size: 0.8rem;">Note: a small number of older summaries whose source video was later deleted or made private have no known channel/date, so they're excluded whenever a channel or date filter is applied.</p>
 
                     <label for="insights-query">Your question</label>
                     <textarea id="insights-query" placeholder="What do you want to know across these summaries?" required></textarea>
@@ -43,9 +44,15 @@
                 </form>
 
                 <div id="insights-result" class="adhoc-result" style="display: none;"></div>
+
+                <div id="recent-insights" class="recent-list" style="display: none;">
+                    <h3>Recent Queries</h3>
+                    <div id="recent-insights-items"></div>
+                </div>
             </div>
         </main>
     </div>
+    <script src="auth.js"></script>
     <script src="insights.js"></script>
 </body>
 </html>
