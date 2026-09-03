@@ -126,7 +126,7 @@ function pollInsightsResult(queryId, resultDiv, submitBtn) {
                 if (data.status === 'complete' || data.status === 'error') {
                     clearInterval(intervalId);
                     const countNote = typeof data.videoCount === 'number'
-                        ? `<p style="color: #6c757d; font-size: 0.85rem; margin-bottom: 0.75rem;">Based on ${data.videoCount} matching video summar${data.videoCount === 1 ? 'y' : 'ies'}.</p>`
+                        ? `<p style="color: #a89bc4; font-size: 0.85rem; margin-bottom: 0.75rem;">Based on ${data.videoCount} matching video summar${data.videoCount === 1 ? 'y' : 'ies'}.</p>`
                         : '';
                     resultDiv.innerHTML = countNote + `<div>${escapeAndFormat(data.answer)}</div>`;
                     submitBtn.disabled = false;
